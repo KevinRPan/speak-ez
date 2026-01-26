@@ -1,0 +1,12 @@
+# Environment secrets (never commit these!)
+.dev.vars
+.env
+.env.local
+
+# Wrangler
+.wrangler/
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db

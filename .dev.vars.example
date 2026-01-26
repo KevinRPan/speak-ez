@@ -1,0 +1,4 @@
+# Copy this file to .dev.vars and add your API key
+# .dev.vars is gitignored and won't be committed
+
+GEMINI_API_KEY=your-gemini-api-key-here
