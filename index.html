@@ -2364,11 +2364,156 @@
         };
 
         const warmups = [
-            { name: "Box Breathing", duration: "2 min", icon: "🌬️", instructions: "Breathe in 4 counts, hold 4, out 4, hold 4. Repeat 5 times." },
-            { name: "Articulation Drill", duration: "3 min", icon: "👅", instructions: "'Red leather, yellow leather' (x5), 'Unique New York' (x5)" },
-            { name: "Projection Practice", duration: "2 min", icon: "📢", instructions: "Say your name at 3 volumes: conversational, across-room, crowd." },
-            { name: "Pace Control", duration: "3 min", icon: "⏱️", instructions: "Read a paragraph at very slow, normal, and fast speeds." },
-            { name: "Resonance & Tone", duration: "2 min", icon: "🎵", instructions: "Hum for 30 seconds, then speak maintaining chest resonance." }
+            {
+                name: "Box Breathing",
+                duration: "2 min",
+                icon: "🌬️",
+                instructions: "Breathe in 4 counts, hold 4, out 4, hold 4. Repeat 5 times.",
+                features: {
+                    timer: true,
+                    recording: false,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: false,
+                    notes: false
+                }
+            },
+            {
+                name: "Articulation Drill",
+                duration: "3 min",
+                icon: "👅",
+                instructions: "'Red leather, yellow leather' (x5), 'Unique New York' (x5)",
+                features: {
+                    timer: true,
+                    recording: true,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: true,
+                    notes: true
+                }
+            },
+            {
+                name: "Projection Practice",
+                duration: "2 min",
+                icon: "📢",
+                instructions: "Say your name at 3 volumes: conversational, across-room, crowd.",
+                features: {
+                    timer: true,
+                    recording: true,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: true,
+                    notes: true
+                }
+            },
+            {
+                name: "Pace Control",
+                duration: "3 min",
+                icon: "⏱️",
+                instructions: "Read a paragraph at very slow, normal, and fast speeds.",
+                features: {
+                    timer: true,
+                    recording: true,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: true,
+                    notes: true
+                }
+            },
+            {
+                name: "Resonance & Tone",
+                duration: "2 min",
+                icon: "🎵",
+                instructions: "Hum for 30 seconds, then speak maintaining chest resonance.",
+                features: {
+                    timer: true,
+                    recording: true,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: true,
+                    notes: true
+                }
+            },
+            {
+                name: "Power Pose",
+                duration: "2 min",
+                icon: "💪",
+                instructions: "Stand tall, feet shoulder-width. Arms up in victory pose. Hold for 1 minute. Repeat affirmations: 'I am confident. I am clear. I am compelling.'",
+                features: {
+                    timer: true,
+                    recording: false,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: false,
+                    notes: false
+                }
+            },
+            {
+                name: "Vocal Range",
+                duration: "3 min",
+                icon: "🎼",
+                instructions: "Say 'Hello, my name is [name]' at your lowest comfortable pitch, then mid-range, then highest. Practice varying pitch naturally.",
+                features: {
+                    timer: true,
+                    recording: true,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: true,
+                    notes: true
+                }
+            },
+            {
+                name: "Energy Levels",
+                duration: "3 min",
+                icon: "⚡",
+                instructions: "Tell a short story (30 sec) three times: low energy (tired), medium (conversational), high (excited). Feel the difference.",
+                features: {
+                    timer: true,
+                    recording: true,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: true,
+                    notes: true
+                }
+            },
+            {
+                name: "Physical Warm-up",
+                duration: "2 min",
+                icon: "🤸",
+                instructions: "Roll shoulders back 5x, forward 5x. Gentle neck rolls. Shake out arms and legs. Jump lightly 10x. Release tension.",
+                features: {
+                    timer: true,
+                    recording: false,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: false,
+                    notes: false
+                }
+            },
+            {
+                name: "Confidence Visualization",
+                duration: "2 min",
+                icon: "🧘",
+                instructions: "Close eyes. Visualize yourself speaking confidently in your next important conversation. See their positive reactions. Feel the confidence.",
+                features: {
+                    timer: true,
+                    recording: false,
+                    transcription: false,
+                    fillerCounter: false,
+                    aiFeedback: false,
+                    ratings: false,
+                    notes: false
+                }
+            }
         ];
 
         const techniques = [
@@ -2854,19 +2999,66 @@
                 const warmup = warmups[(week-1) % warmups.length];
                 document.getElementById('promptText').textContent = warmup.instructions;
                 document.getElementById('frameworkCard').style.display = 'none';
+
+                // Configure features based on warmup type
+                const features = warmup.features || {};
+                document.querySelector('.filler-section').style.display = features.fillerCounter ? 'block' : 'none';
+                document.getElementById('transcriptionSection').style.display = features.transcription ? 'block' : 'none';
+                document.getElementById('playbackSection').style.display = features.recording ? 'block' : 'none';
+                document.getElementById('aiFeedbackSection').style.display = features.aiFeedback ? 'block' : 'none';
+                document.querySelector('.rating-section').style.display = features.ratings ? 'block' : 'none';
+                document.querySelector('.notes-section').style.display = features.notes ? 'block' : 'none';
+
+                // Update record button hint based on whether recording is available
+                if (!features.recording) {
+                    document.getElementById('recordHint').textContent = 'Timer will start automatically';
+                    document.getElementById('recordBtn').style.display = 'none';
+                } else {
+                    document.getElementById('recordBtn').style.display = 'block';
+                    document.getElementById('recordHint').textContent = 'Tap to start recording';
+                }
             } else if (id === 'reflection') {
                 document.getElementById('promptText').textContent = "What went well today? What's one specific thing you'll focus on improving tomorrow?";
                 document.getElementById('frameworkCard').style.display = 'none';
+
+                // Show all features for reflection
+                document.querySelector('.filler-section').style.display = 'block';
+                document.getElementById('transcriptionSection').style.display = 'block';
+                document.getElementById('playbackSection').style.display = 'block';
+                document.getElementById('aiFeedbackSection').style.display = 'block';
+                document.querySelector('.rating-section').style.display = 'block';
+                document.querySelector('.notes-section').style.display = 'block';
+                document.getElementById('recordBtn').style.display = 'block';
+                document.getElementById('recordHint').textContent = 'Tap to start recording';
             } else {
                 newPrompt();
                 const fw = frameworks[framework];
                 document.getElementById('frameworkCard').style.display = 'block';
                 document.getElementById('frameworkName').textContent = fw.name;
                 document.getElementById('frameworkStructure').textContent = fw.structure;
+
+                // Show all features for core exercises and challenges
+                document.querySelector('.filler-section').style.display = 'block';
+                document.getElementById('transcriptionSection').style.display = 'block';
+                document.getElementById('playbackSection').style.display = 'block';
+                document.getElementById('aiFeedbackSection').style.display = 'block';
+                document.querySelector('.rating-section').style.display = 'block';
+                document.querySelector('.notes-section').style.display = 'block';
+                document.getElementById('recordBtn').style.display = 'block';
+                document.getElementById('recordHint').textContent = 'Tap to start recording';
             }
-            
+
             showScreen('practice');
             document.querySelector('.nav').style.display = 'none';
+
+            // Auto-start timer for exercises without recording
+            if (id === 'warmup') {
+                const warmup = warmups[(week-1) % warmups.length];
+                if (!warmup.features.recording) {
+                    // Give user a moment to read instructions, then start timer
+                    setTimeout(() => startTimer(), 1000);
+                }
+            }
         }
 
         function resetExerciseState() {
