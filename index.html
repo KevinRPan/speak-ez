@@ -2995,6 +2995,11 @@
                     console.log('Speech recognition error:', event.error);
                 };
             }
+
+            // Save state when user leaves page
+            window.addEventListener('beforeunload', () => {
+                saveState();
+            });
         }
 
         function startApp() {
@@ -3264,12 +3269,12 @@
         }
 
         function resetExerciseState() {
+            cleanupAudioPlayer();
             state.fillerCounts = { um: 0, uh: 0, like: 0, so: 0 };
             state.ratings = { structure: 0, confidence: 0, vocal: 0 };
             state.timer.seconds = 0;
             state.transcription.transcript = '';
             state.recording.audioBlob = null;
-            state.recording.audioUrl = null;
             
             document.querySelectorAll('.filler-count').forEach(el => el.textContent = '0');
             document.getElementById('fillerTotal').textContent = '0';
@@ -3293,8 +3298,20 @@
         function exitPractice() {
             stopTimer();
             stopRecording();
+            cleanupAudioPlayer();
             document.querySelector('.nav').style.display = 'block';
             showScreen('today');
+        }
+
+        function cleanupAudioPlayer() {
+            if (window.audioPlayer) {
+                window.audioPlayer.pause();
+                window.audioPlayer = null;
+            }
+            if (state.recording.audioUrl) {
+                URL.revokeObjectURL(state.recording.audioUrl);
+                state.recording.audioUrl = null;
+            }
         }
 
         // ===== RECORDING =====
@@ -3387,7 +3404,7 @@
 
         function togglePlayback() {
             if (!state.recording.audioUrl) return;
-            
+
             if (!window.audioPlayer) {
                 window.audioPlayer = new Audio(state.recording.audioUrl);
                 window.audioPlayer.onended = () => {
@@ -3397,10 +3414,18 @@
                     const time = Math.floor(window.audioPlayer.currentTime);
                     document.getElementById('playbackTime').textContent = formatTime(time);
                 };
+                window.audioPlayer.onerror = () => {
+                    console.error('Audio playback error');
+                    document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+                    window.audioPlayer = null;
+                };
             }
-            
+
             if (window.audioPlayer.paused) {
-                window.audioPlayer.play();
+                window.audioPlayer.play().catch(err => {
+                    console.error('Failed to play audio:', err);
+                    document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+                });
                 document.getElementById('playIcon').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
             } else {
                 window.audioPlayer.pause();
@@ -3603,15 +3628,9 @@ Please provide feedback in this exact JSON format (no markdown, just JSON):
             
             // Show XP popup
             showXpPopup(xpEarned);
-            
+
             // Cleanup
-            if (window.audioPlayer) {
-                window.audioPlayer.pause();
-                window.audioPlayer = null;
-            }
-            if (state.recording.audioUrl) {
-                URL.revokeObjectURL(state.recording.audioUrl);
-            }
+            cleanupAudioPlayer();
         }
 
         function showXpPopup(amount) {
