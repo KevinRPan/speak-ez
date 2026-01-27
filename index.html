@@ -1092,6 +1092,41 @@
             transform: none;
         }
 
+        /* Modal Buttons */
+        .btn-primary {
+            padding: 14px 20px;
+            background: linear-gradient(135deg, var(--green), #4caf50);
+            border: none;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 14px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--green);
+        }
+
         /* XP Popup */
         .xp-popup {
             position: fixed;
@@ -1583,6 +1618,19 @@
 
         .library-item-icon.technique {
             background: var(--purple-dim);
+        }
+
+        .library-item-icon.communication {
+            background: rgba(46, 213, 115, 0.15);
+        }
+
+        .phase-header-item {
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--green);
+        }
+
+        .communication-section .library-item {
+            margin-bottom: 8px;
         }
 
         .library-item-content {
@@ -2524,6 +2572,160 @@
             { name: "Curse of Knowledge Antidote", icon: "🧠", desc: "Start with what they know, use analogies." },
             { name: "Vocal Variety", icon: "🎤", desc: "Vary pace, pitch, and volume for impact." },
             { name: "Audience-Outcome-Material", icon: "🎯", desc: "Before speaking: Who? What outcome? What supports it?" }
+        ];
+
+        // Communication Exercises based on "The Laziest Way To Be A Top 1% Communicator" by Vinh Giang
+        const communicationExercises = {
+            phase1: {
+                name: "Phase 1: Self-Awareness Audit",
+                desc: "Four steps to understand your current communication patterns",
+                tasks: [
+                    {
+                        name: "The Communication Mirror",
+                        icon: "🪞",
+                        duration: "5 min recording + 24hr wait",
+                        desc: "Record yourself answering impromptu questions to see how you really communicate.",
+                        instructions: [
+                            "Record a 5-minute completely impromptu video of yourself",
+                            "Answer open-ended questions without preparation",
+                            "Wait 24 hours before watching (move from 'defensive mode' to 'observer mode')",
+                            "Use the prompt generator to get practice questions"
+                        ],
+                        aiPrompt: "I'm practicing impromptu speaking to improve my communication skills. Generate 10 open-ended questions that I can answer out loud for 5 minutes. The questions should be suitable for beginners, not overly deep, abstract, or too philosophical. Focus on personal and professional themes only. Exclude philosophical, global, or political topics. Be specific enough to trigger a clear story, example, or an opinion. Encourage reflection, explanation, and storytelling rather than yes/no answers. Vary in tone; include a mix of lightness, fun, and moderately serious prompts."
+                    },
+                    {
+                        name: "Vocal Review",
+                        icon: "👂",
+                        duration: "4-5 min",
+                        desc: "Listen to your recording with the screen facing down - focus only on sound.",
+                        instructions: [
+                            "Play your recording with the screen facing down",
+                            "Focus entirely on how you sound, not how you look"
+                        ],
+                        reviewQuestions: [
+                            "How does my voice make me feel?",
+                            "Does my delivery match the message?",
+                            "When do I sound most believable vs. disconnected?",
+                            "What happens to my pitch at the end of sentences (up-talk vs. authority)?",
+                            "Do I pause strategically or use filler noise?"
+                        ]
+                    },
+                    {
+                        name: "Visual Review",
+                        icon: "👁️",
+                        duration: "4-5 min",
+                        desc: "Watch your video with volume at zero to analyze body language.",
+                        instructions: [
+                            "Watch your recording with the volume completely muted",
+                            "Focus entirely on body language and visual presence"
+                        ],
+                        reviewQuestions: [
+                            "Where do I look when thinking?",
+                            "What are my default hand gestures?",
+                            "Does my face express the right emotions?",
+                            "Are there distracting visual ticks?",
+                            "Do I look confident or apologetic?"
+                        ]
+                    },
+                    {
+                        name: "Verbal Review",
+                        icon: "📝",
+                        duration: "5-10 min",
+                        desc: "Transcribe your video and analyze the text for patterns.",
+                        instructions: [
+                            "Transcribe your video (including filler words)",
+                            "Review the written text for patterns",
+                            "Use AI to identify word choice patterns and repetitive phrases"
+                        ],
+                        reviewQuestions: [
+                            "Does each paragraph make one clear point?",
+                            "Do I use short, clear words or overly complex ones?",
+                            "What are my specific non-words (um, ah)?",
+                            "What are my filler words (like, so, you know)?",
+                            "Are there repetitive phrases I overuse?"
+                        ],
+                        aiPrompt: "Analyze this transcript of my impromptu speaking. Identify patterns in my word choice, sentence structure, and any repetitive phrases. Note my use of filler words (um, uh, like, so, you know) and non-words. Provide specific, actionable feedback on: 1) Clarity of my points, 2) Word choice complexity, 3) Sentence structure patterns, 4) Areas for improvement."
+                    }
+                ]
+            },
+            phase2: {
+                name: "Phase 2: 12-Week Implementation",
+                desc: "Systematic behavior change with focused weekly practice",
+                overview: [
+                    "Pick ONE behavior to improve from your self-assessment",
+                    "Focus on that single behavior in every conversation for a week",
+                    "Do a 'Record and Review' session weekly (5 min recording, 4 min reviewing)",
+                    "Master one behavior before moving to the next (even if it takes 4+ weeks)"
+                ],
+                behaviorCategories: [
+                    {
+                        name: "Vocal Behaviors",
+                        icon: "🎙️",
+                        behaviors: [
+                            "Increase volume/projection",
+                            "Reduce up-talk (ending sentences with rising pitch)",
+                            "Add strategic pauses",
+                            "Eliminate specific filler words",
+                            "Vary pitch for emphasis",
+                            "Control speaking pace"
+                        ]
+                    },
+                    {
+                        name: "Visual Behaviors",
+                        icon: "👀",
+                        behaviors: [
+                            "Maintain eye contact",
+                            "Expand hand gesture vocabulary",
+                            "Eliminate distracting ticks",
+                            "Match facial expressions to content",
+                            "Improve posture and stance",
+                            "Use purposeful movement"
+                        ]
+                    },
+                    {
+                        name: "Verbal Behaviors",
+                        icon: "💬",
+                        behaviors: [
+                            "Use shorter, clearer words",
+                            "Make one point per response",
+                            "Structure answers with frameworks",
+                            "Reduce repetitive phrases",
+                            "Add concrete examples",
+                            "Improve transitions between ideas"
+                        ]
+                    }
+                ],
+                weeklyRoutine: {
+                    name: "9-Minute Weekly Review",
+                    icon: "📅",
+                    desc: "The minimum effective dose for communication improvement",
+                    steps: [
+                        { time: "5 min", action: "Record yourself practicing or in a real conversation" },
+                        { time: "2 min", action: "Review for your ONE focus behavior" },
+                        { time: "2 min", action: "Note progress and adjust for next week" }
+                    ],
+                    masteryRule: "You are NOT allowed to move to a new behavior until you have satisfied your goal for the current one."
+                }
+            }
+        };
+
+        // Impromptu practice prompts for Communication Mirror exercise
+        const impromptuPracticePrompts = [
+            "What's a skill you taught yourself, and how did you go about learning it?",
+            "Describe a time when you had to adapt quickly to an unexpected change at work.",
+            "What's the best piece of advice you've ever received, and how have you applied it?",
+            "Tell me about a project you're proud of and why it mattered to you.",
+            "What's something you believed strongly in the past but have since changed your mind about?",
+            "Describe your ideal productive morning routine and why it works for you.",
+            "What's a hobby or interest that most people don't know you have?",
+            "Tell me about a time you had to explain something complex to someone unfamiliar with the topic.",
+            "What's a small win from this week that you're celebrating?",
+            "Describe a mentor or role model who influenced your professional development.",
+            "What's one thing you wish you had known when you started your career?",
+            "Tell me about a time you received feedback that was hard to hear but ultimately helpful.",
+            "What's a book, podcast, or resource that has genuinely changed how you think or work?",
+            "Describe a situation where you had to balance multiple priorities. How did you decide what came first?",
+            "What's something you're currently trying to get better at, and what's your approach?"
         ];
 
         const achievements = [
@@ -3534,11 +3736,11 @@ Please provide feedback in this exact JSON format (no markdown, just JSON):
 
         // ===== LIBRARY SCREEN =====
         function renderLibraryScreen() {
-            const tabs = ['Frameworks', 'Warm-ups', 'Techniques'];
-            document.getElementById('libraryTabs').innerHTML = tabs.map((tab, i) => 
+            const tabs = ['Frameworks', 'Warm-ups', 'Techniques', 'Communication'];
+            document.getElementById('libraryTabs').innerHTML = tabs.map((tab, i) =>
                 `<button class="library-tab ${i === 0 ? 'active' : ''}" onclick="switchLibraryTab('${tab.toLowerCase()}', this)">${tab}</button>`
             ).join('');
-            
+
             renderLibraryContent('frameworks');
         }
 
@@ -3552,13 +3754,66 @@ Please provide feedback in this exact JSON format (no markdown, just JSON):
             const container = document.getElementById('libraryContent');
             let items = [];
             let iconClass = '';
-            
+
             if (tab === 'frameworks') {
                 items = Object.values(frameworks).map(f => ({ ...f, desc: f.structure }));
                 iconClass = 'framework';
             } else if (tab === 'warm-ups') {
                 items = warmups.map(w => ({ name: w.name, icon: w.icon, desc: w.duration + ' - ' + w.instructions.substring(0, 50) + '...' }));
                 iconClass = 'warmup';
+            } else if (tab === 'communication') {
+                // Render communication exercises with phases
+                container.innerHTML = `
+                    <div class="communication-section">
+                        <div class="library-item phase-header-item" onclick="showLibraryDetail('communication', 'phase1')">
+                            <div class="library-item-icon communication">🎯</div>
+                            <div class="library-item-content">
+                                <div class="library-item-title">${communicationExercises.phase1.name}</div>
+                                <div class="library-item-desc">${communicationExercises.phase1.desc}</div>
+                            </div>
+                        </div>
+                        ${communicationExercises.phase1.tasks.map((task, i) => `
+                            <div class="library-item" onclick="showLibraryDetail('communication', 'task${i}')">
+                                <div class="library-item-icon warmup">${task.icon}</div>
+                                <div class="library-item-content">
+                                    <div class="library-item-title">${task.name}</div>
+                                    <div class="library-item-desc">${task.duration} - ${task.desc}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        <div class="library-item phase-header-item" onclick="showLibraryDetail('communication', 'phase2')">
+                            <div class="library-item-icon communication">📈</div>
+                            <div class="library-item-content">
+                                <div class="library-item-title">${communicationExercises.phase2.name}</div>
+                                <div class="library-item-desc">${communicationExercises.phase2.desc}</div>
+                            </div>
+                        </div>
+                        ${communicationExercises.phase2.behaviorCategories.map((cat, i) => `
+                            <div class="library-item" onclick="showLibraryDetail('communication', 'behavior${i}')">
+                                <div class="library-item-icon technique">${cat.icon}</div>
+                                <div class="library-item-content">
+                                    <div class="library-item-title">${cat.name}</div>
+                                    <div class="library-item-desc">${cat.behaviors.length} behaviors to practice</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        <div class="library-item" onclick="showLibraryDetail('communication', 'routine')">
+                            <div class="library-item-icon framework">${communicationExercises.phase2.weeklyRoutine.icon}</div>
+                            <div class="library-item-content">
+                                <div class="library-item-title">${communicationExercises.phase2.weeklyRoutine.name}</div>
+                                <div class="library-item-desc">${communicationExercises.phase2.weeklyRoutine.desc}</div>
+                            </div>
+                        </div>
+                        <div class="library-item" onclick="showLibraryDetail('communication', 'prompts')">
+                            <div class="library-item-icon warmup">💬</div>
+                            <div class="library-item-content">
+                                <div class="library-item-title">Impromptu Practice Prompts</div>
+                                <div class="library-item-desc">${impromptuPracticePrompts.length} questions for self-recording practice</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
             } else {
                 items = techniques;
                 iconClass = 'technique';
@@ -3577,20 +3832,96 @@ Please provide feedback in this exact JSON format (no markdown, just JSON):
 
         function showLibraryDetail(tab, index) {
             let item;
-            if (tab === 'frameworks') item = Object.values(frameworks)[index];
-            else if (tab === 'warm-ups') item = warmups[index];
-            else item = techniques[index];
-            
-            document.getElementById('modalTitle').textContent = item.name;
-            
             let body = '';
-            if (item.structure) body += `<h3>Structure</h3><p>${item.structure}</p>`;
-            if (item.duration) body += `<h3>Duration</h3><p>${item.duration}</p>`;
-            if (item.instructions) body += `<h3>Instructions</h3><p>${item.instructions}</p>`;
-            if (item.desc && tab === 'techniques') body += `<h3>Description</h3><p>${item.desc}</p>`;
-            
+
+            if (tab === 'frameworks') {
+                item = Object.values(frameworks)[index];
+                document.getElementById('modalTitle').textContent = item.name;
+                if (item.structure) body += `<h3>Structure</h3><p>${item.structure}</p>`;
+            } else if (tab === 'warm-ups') {
+                item = warmups[index];
+                document.getElementById('modalTitle').textContent = item.name;
+                if (item.duration) body += `<h3>Duration</h3><p>${item.duration}</p>`;
+                if (item.instructions) body += `<h3>Instructions</h3><p>${item.instructions}</p>`;
+            } else if (tab === 'communication') {
+                // Handle communication exercise details
+                if (index === 'phase1') {
+                    document.getElementById('modalTitle').textContent = communicationExercises.phase1.name;
+                    body = `<p>${communicationExercises.phase1.desc}</p>
+                        <h3>Tasks</h3>
+                        <ul>${communicationExercises.phase1.tasks.map(t => `<li><strong>${t.name}</strong> (${t.duration})</li>`).join('')}</ul>
+                        <p style="margin-top: 1rem; font-style: italic;">Complete these 4 tasks to build self-awareness about your current communication patterns.</p>`;
+                } else if (index === 'phase2') {
+                    document.getElementById('modalTitle').textContent = communicationExercises.phase2.name;
+                    body = `<p>${communicationExercises.phase2.desc}</p>
+                        <h3>Overview</h3>
+                        <ul>${communicationExercises.phase2.overview.map(o => `<li>${o}</li>`).join('')}</ul>`;
+                } else if (index.startsWith('task')) {
+                    const taskIndex = parseInt(index.replace('task', ''));
+                    const task = communicationExercises.phase1.tasks[taskIndex];
+                    document.getElementById('modalTitle').textContent = task.name;
+                    body = `<h3>Duration</h3><p>${task.duration}</p>
+                        <h3>Purpose</h3><p>${task.desc}</p>
+                        <h3>Instructions</h3><ol>${task.instructions.map(i => `<li>${i}</li>`).join('')}</ol>`;
+                    if (task.reviewQuestions) {
+                        body += `<h3>Review Questions</h3><ul>${task.reviewQuestions.map(q => `<li>${q}</li>`).join('')}</ul>`;
+                    }
+                    if (task.aiPrompt) {
+                        body += `<h3>AI Prompt</h3><p style="background: var(--bg-card); padding: 1rem; border-radius: 8px; font-size: 0.9rem;">${task.aiPrompt}</p>
+                            <button class="btn-primary" style="margin-top: 0.5rem; width: 100%;" onclick="copyToClipboard(\`${task.aiPrompt.replace(/`/g, '\\`')}\`)">Copy Prompt</button>`;
+                    }
+                } else if (index.startsWith('behavior')) {
+                    const behaviorIndex = parseInt(index.replace('behavior', ''));
+                    const category = communicationExercises.phase2.behaviorCategories[behaviorIndex];
+                    document.getElementById('modalTitle').textContent = category.name;
+                    body = `<h3>Behaviors to Practice</h3>
+                        <p>Pick ONE of these behaviors to focus on for 1-4 weeks until mastered:</p>
+                        <ul>${category.behaviors.map(b => `<li>${b}</li>`).join('')}</ul>
+                        <p style="margin-top: 1rem; font-style: italic;">${communicationExercises.phase2.weeklyRoutine.masteryRule}</p>`;
+                } else if (index === 'routine') {
+                    const routine = communicationExercises.phase2.weeklyRoutine;
+                    document.getElementById('modalTitle').textContent = routine.name;
+                    body = `<p>${routine.desc}</p>
+                        <h3>Weekly Steps</h3>
+                        <ol>${routine.steps.map(s => `<li><strong>${s.time}:</strong> ${s.action}</li>`).join('')}</ol>
+                        <h3>Mastery Rule</h3>
+                        <p style="background: var(--bg-card); padding: 1rem; border-radius: 8px; font-weight: 500;">${routine.masteryRule}</p>`;
+                } else if (index === 'prompts') {
+                    document.getElementById('modalTitle').textContent = 'Impromptu Practice Prompts';
+                    body = `<p>Use these questions for your Communication Mirror exercise. Answer each one out loud for 30 seconds to 1 minute.</p>
+                        <h3>Practice Questions</h3>
+                        <ol>${impromptuPracticePrompts.map(p => `<li style="margin-bottom: 0.75rem;">${p}</li>`).join('')}</ol>
+                        <button class="btn-primary" style="margin-top: 1rem; width: 100%;" onclick="getRandomPrompt()">Get Random Prompt</button>`;
+                }
+                document.getElementById('modalBody').innerHTML = body;
+                document.getElementById('modalOverlay').classList.add('active');
+                return;
+            } else {
+                item = techniques[index];
+                document.getElementById('modalTitle').textContent = item.name;
+                if (item.desc) body += `<h3>Description</h3><p>${item.desc}</p>`;
+            }
+
             document.getElementById('modalBody').innerHTML = body;
             document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        }
+
+        function getRandomPrompt() {
+            const prompt = impromptuPracticePrompts[Math.floor(Math.random() * impromptuPracticePrompts.length)];
+            document.getElementById('modalBody').innerHTML = `
+                <p style="font-size: 1.25rem; line-height: 1.6; padding: 1.5rem; background: var(--bg-card); border-radius: 12px; text-align: center;">"${prompt}"</p>
+                <button class="btn-primary" style="margin-top: 1rem; width: 100%;" onclick="getRandomPrompt()">Get Another Prompt</button>
+                <button class="btn-secondary" style="margin-top: 0.5rem; width: 100%;" onclick="showLibraryDetail('communication', 'prompts')">See All Prompts</button>
+            `;
         }
 
         function showFrameworkHelp() {
