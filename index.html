@@ -648,6 +648,41 @@
             margin-bottom: 24px;
         }
 
+        .video-preview-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 20px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            background: var(--bg-secondary);
+            display: none;
+        }
+
+        .video-preview-container.active {
+            display: block;
+        }
+
+        .video-preview-container video {
+            width: 100%;
+            display: block;
+            transform: scaleX(-1);
+        }
+
+        .video-playback-container {
+            width: 100%;
+            margin-bottom: 16px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            background: #000;
+        }
+
+        .video-playback-container video {
+            width: 100%;
+            display: block;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
         .timer-display {
             font-size: 56px;
             font-weight: 900;
@@ -902,6 +937,23 @@
             width: 20px;
             height: 20px;
             fill: currentColor;
+        }
+
+        .get-feedback-btn {
+            margin-left: auto;
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .get-feedback-btn:hover {
+            opacity: 0.9;
         }
 
         .waveform {
@@ -2073,6 +2125,9 @@
                     </div>
 
                     <div class="recording-section">
+                        <div class="video-preview-container" id="videoPreviewContainer">
+                            <video id="videoPreview" autoplay muted playsinline></video>
+                        </div>
                         <div class="timer-display" id="timerDisplay">0:00</div>
                         <div class="timer-label">Response Time</div>
                         <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
@@ -2090,12 +2145,17 @@
                     </div>
 
                     <div class="playback-section" id="playbackSection">
+                        <div class="video-playback-container">
+                            <video id="videoPlayback" playsinline controls></video>
+                        </div>
                         <div class="playback-controls">
                             <button class="play-btn" id="playBtn" onclick="togglePlayback()">
                                 <svg viewBox="0 0 24 24" id="playIcon"><polygon points="5,3 19,12 5,21"/></svg>
                             </button>
-                            <div class="waveform" id="waveform"></div>
                             <span class="playback-time" id="playbackTime">0:00</span>
+                            <button class="get-feedback-btn" id="getFeedbackBtn" onclick="getAiFeedback(true)">
+                                Get AI Feedback
+                            </button>
                         </div>
                     </div>
 
@@ -2775,9 +2835,10 @@
             recording: {
                 isRecording: false,
                 mediaRecorder: null,
-                audioChunks: [],
-                audioBlob: null,
-                audioUrl: null
+                chunks: [],
+                blob: null,
+                url: null,
+                stream: null
             },
             transcription: {
                 recognition: null,
@@ -2995,6 +3056,9 @@
                     console.log('Speech recognition error:', event.error);
                 };
             }
+
+            // Setup video playback listeners
+            setupVideoPlaybackListeners();
 
             // Save state when user leaves page
             window.addEventListener('beforeunload', () => {
@@ -3269,12 +3333,13 @@
         }
 
         function resetExerciseState() {
-            cleanupAudioPlayer();
+            cleanupRecording();
             state.fillerCounts = { um: 0, uh: 0, like: 0, so: 0 };
             state.ratings = { structure: 0, confidence: 0, vocal: 0 };
             state.timer.seconds = 0;
             state.transcription.transcript = '';
-            state.recording.audioBlob = null;
+            state.recording.blob = null;
+            state.recording.chunks = [];
             
             document.querySelectorAll('.filler-count').forEach(el => el.textContent = '0');
             document.getElementById('fillerTotal').textContent = '0';
@@ -3298,20 +3363,36 @@
         function exitPractice() {
             stopTimer();
             stopRecording();
-            cleanupAudioPlayer();
+            cleanupRecording();
             document.querySelector('.nav').style.display = 'block';
             showScreen('today');
         }
 
-        function cleanupAudioPlayer() {
-            if (window.audioPlayer) {
-                window.audioPlayer.pause();
-                window.audioPlayer = null;
+        function cleanupRecording() {
+            // Stop any active stream
+            if (state.recording.stream) {
+                state.recording.stream.getTracks().forEach(track => track.stop());
+                state.recording.stream = null;
             }
-            if (state.recording.audioUrl) {
-                URL.revokeObjectURL(state.recording.audioUrl);
-                state.recording.audioUrl = null;
+
+            // Clear video elements
+            const videoPreview = document.getElementById('videoPreview');
+            const videoPlayback = document.getElementById('videoPlayback');
+            if (videoPreview) {
+                videoPreview.srcObject = null;
             }
+            if (videoPlayback) {
+                videoPlayback.pause();
+                videoPlayback.src = '';
+            }
+
+            // Revoke object URL
+            if (state.recording.url) {
+                URL.revokeObjectURL(state.recording.url);
+                state.recording.url = null;
+            }
+
+            document.getElementById('videoPreviewContainer').classList.remove('active');
         }
 
         // ===== RECORDING =====
@@ -3325,30 +3406,61 @@
 
         async function startRecording() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                state.recording.mediaRecorder = new MediaRecorder(stream);
-                state.recording.audioChunks = [];
-                
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                    audio: true
+                });
+                state.recording.stream = stream;
+
+                // Show video preview
+                const videoPreview = document.getElementById('videoPreview');
+                const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+                videoPreview.srcObject = stream;
+                videoPreviewContainer.classList.add('active');
+
+                // Determine best mime type
+                const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+                    ? 'video/webm;codecs=vp9,opus'
+                    : MediaRecorder.isTypeSupported('video/webm')
+                        ? 'video/webm'
+                        : 'video/mp4';
+
+                state.recording.mediaRecorder = new MediaRecorder(stream, { mimeType });
+                state.recording.chunks = [];
+
                 state.recording.mediaRecorder.ondataavailable = (e) => {
-                    state.recording.audioChunks.push(e.data);
+                    if (e.data.size > 0) {
+                        state.recording.chunks.push(e.data);
+                    }
                 };
-                
+
                 state.recording.mediaRecorder.onstop = () => {
-                    state.recording.audioBlob = new Blob(state.recording.audioChunks, { type: 'audio/webm' });
-                    state.recording.audioUrl = URL.createObjectURL(state.recording.audioBlob);
+                    const mimeType = state.recording.mediaRecorder.mimeType || 'video/webm';
+                    state.recording.blob = new Blob(state.recording.chunks, { type: mimeType });
+                    state.recording.url = URL.createObjectURL(state.recording.blob);
+
+                    // Setup video playback
+                    const videoPlayback = document.getElementById('videoPlayback');
+                    videoPlayback.src = state.recording.url;
+
                     document.getElementById('playbackSection').classList.add('has-recording');
-                    renderWaveform();
+
+                    // Stop all tracks
                     stream.getTracks().forEach(track => track.stop());
-                    
+
+                    // Hide preview
+                    document.getElementById('videoPreviewContainer').classList.remove('active');
+                    document.getElementById('videoPreview').srcObject = null;
+
                     // Trigger AI feedback
                     if (state.transcription.transcript.length > 20) {
                         getAiFeedback();
                     }
                 };
-                
-                state.recording.mediaRecorder.start();
+
+                state.recording.mediaRecorder.start(1000); // Collect data every second
                 state.recording.isRecording = true;
-                
+
                 // Start speech recognition
                 if (state.transcription.recognition) {
                     state.transcription.transcript = '';
@@ -3361,15 +3473,15 @@
                         console.log('Speech recognition already started');
                     }
                 }
-                
+
                 document.getElementById('recordBtn').classList.add('recording');
                 document.getElementById('recordIcon').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
                 document.getElementById('recordHint').textContent = 'Tap to stop';
-                
+
                 startTimer();
             } catch (err) {
                 console.error('Recording error:', err);
-                alert('Could not access microphone. Please allow microphone access and try again.');
+                alert('Could not access camera and microphone. Please allow access and try again.');
             }
         }
 
@@ -3393,74 +3505,77 @@
             }
         }
 
-        function renderWaveform() {
-            const container = document.getElementById('waveform');
-            const bars = 25;
-            container.innerHTML = Array(bars).fill(0).map(() => {
-                const height = Math.random() * 28 + 8;
-                return `<div class="waveform-bar" style="height: ${height}px;"></div>`;
-            }).join('');
-        }
-
         function togglePlayback() {
-            if (!state.recording.audioUrl) return;
+            const videoPlayback = document.getElementById('videoPlayback');
+            if (!state.recording.url || !videoPlayback.src) return;
 
-            if (!window.audioPlayer) {
-                window.audioPlayer = new Audio(state.recording.audioUrl);
-                window.audioPlayer.onended = () => {
-                    document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
-                };
-                window.audioPlayer.ontimeupdate = () => {
-                    const time = Math.floor(window.audioPlayer.currentTime);
-                    document.getElementById('playbackTime').textContent = formatTime(time);
-                };
-                window.audioPlayer.onerror = () => {
-                    console.error('Audio playback error');
-                    document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
-                    window.audioPlayer = null;
-                };
-            }
-
-            if (window.audioPlayer.paused) {
-                window.audioPlayer.play().catch(err => {
-                    console.error('Failed to play audio:', err);
-                    document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+            if (videoPlayback.paused) {
+                videoPlayback.play().catch(err => {
+                    console.error('Failed to play video:', err);
                 });
                 document.getElementById('playIcon').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
             } else {
-                window.audioPlayer.pause();
+                videoPlayback.pause();
                 document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
             }
         }
 
+        // Setup video playback event listeners
+        function setupVideoPlaybackListeners() {
+            const videoPlayback = document.getElementById('videoPlayback');
+            if (!videoPlayback) return;
+
+            videoPlayback.onended = () => {
+                document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+            };
+
+            videoPlayback.onpause = () => {
+                document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+            };
+
+            videoPlayback.onplay = () => {
+                document.getElementById('playIcon').innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            };
+
+            videoPlayback.ontimeupdate = () => {
+                const time = Math.floor(videoPlayback.currentTime);
+                document.getElementById('playbackTime').textContent = formatTime(time);
+            };
+
+            videoPlayback.onerror = () => {
+                console.error('Video playback error');
+                document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+            };
+        }
+
         // ===== AI FEEDBACK =====
-        async function getAiFeedback() {
+        async function getAiFeedback(forceRequest = false) {
             const transcript = state.transcription.transcript;
-            if (!transcript || transcript.length < 20) return;
-            
+            const hasTranscript = transcript && transcript.length >= 20;
+            const recordingDuration = state.timer.seconds;
+
+            // Only auto-trigger if we have a good transcript, but allow manual requests
+            if (!forceRequest && !hasTranscript) return;
+
+            // Need at least some recording time for feedback to make sense
+            if (recordingDuration < 3 && !hasTranscript) {
+                alert('Please record for at least a few seconds before requesting feedback.');
+                return;
+            }
+
             const feedbackSection = document.getElementById('aiFeedbackSection');
             feedbackSection.classList.add('visible');
             document.getElementById('aiLoading').style.display = 'flex';
             document.getElementById('aiScore').style.display = 'none';
             document.getElementById('aiFeedbackContent').innerHTML = '';
-            
+
             const promptText = document.getElementById('promptText').textContent;
-            const framework = state.currentExercise.framework;
-            const fw = frameworks[framework];
-            
+            const framework = state.currentExercise ? state.currentExercise.framework : null;
+            const fw = framework ? frameworks[framework] : null;
+
             try {
                 // Build the prompt for the AI
-                const aiPrompt = `You are a speaking coach reviewing a practice response. Be encouraging but specific.
-
-PROMPT GIVEN: "${promptText}"
-
-SUGGESTED FRAMEWORK: ${fw ? fw.name + ' (' + fw.structure + ')' : 'None'}
-
-SPEAKER'S RESPONSE (transcribed):
-"${transcript}"
-
-Please provide feedback in this exact JSON format (no markdown, just JSON):
-{
+                const jsonSchema = `{
   "scores": {
     "structure": <1-5>,
     "clarity": <1-5>,
@@ -3472,6 +3587,33 @@ Please provide feedback in this exact JSON format (no markdown, just JSON):
   "frameworkUsage": "<brief note on how well they used the suggested framework>",
   "oneThingToFocus": "<single most important thing to work on next>"
 }`;
+
+                let aiPrompt;
+                if (hasTranscript) {
+                    aiPrompt = `You are a speaking coach reviewing a practice response. Be encouraging but specific.
+
+PROMPT GIVEN: "${promptText}"
+
+SUGGESTED FRAMEWORK: ${fw ? fw.name + ' (' + fw.structure + ')' : 'None'}
+
+SPEAKER'S RESPONSE (transcribed):
+"${transcript}"
+
+Please provide feedback in this exact JSON format (no markdown, just JSON):
+${jsonSchema}`;
+                } else {
+                    aiPrompt = `You are a speaking coach providing tips for a speaking practice. Be encouraging and specific.
+
+PROMPT GIVEN: "${promptText}"
+
+SUGGESTED FRAMEWORK: ${fw ? fw.name + ' (' + fw.structure + ')' : 'None'}
+
+RECORDING DURATION: ${recordingDuration} seconds
+
+The user just completed a practice session but we don't have a transcript. Based on the prompt and framework, provide general coaching tips and things to focus on.
+
+Please provide feedback in this exact JSON format (no markdown, just JSON):
+${jsonSchema}`;
 
                 // Call our Cloudflare Function (proxies to Gemini API)
                 const response = await fetch('/api/feedback', {
@@ -3630,7 +3772,7 @@ Please provide feedback in this exact JSON format (no markdown, just JSON):
             showXpPopup(xpEarned);
 
             // Cleanup
-            cleanupAudioPlayer();
+            cleanupRecording();
         }
 
         function showXpPopup(amount) {
