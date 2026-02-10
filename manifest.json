@@ -1,15 +1,15 @@
 {
-  "name": "Speak Sharp",
-  "short_name": "SpeakSharp",
-  "description": "Daily speaking practice with AI feedback",
+  "name": "Speak-EZ",
+  "short_name": "SpeakEZ",
+  "description": "Communication training app — like HEVY, but for speaking skills",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f0f",
-  "theme_color": "#0f0f0f",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗣</text></svg>",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
