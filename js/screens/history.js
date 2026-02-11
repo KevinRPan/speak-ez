@@ -3,6 +3,7 @@
  */
 
 import { getHistory } from '../utils/storage.js';
+import { navigateTo } from '../lib/router.js';
 
 export function renderHistory(container) {
   const history = getHistory();
@@ -44,7 +45,7 @@ export function renderHistory(container) {
     if (!action) return;
 
     if (action.dataset.action === 'start-workout') {
-      document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
+      navigateTo('workouts');
     } else if (action.dataset.action === 'view-session') {
       const index = parseInt(action.dataset.index);
       const session = history[index];

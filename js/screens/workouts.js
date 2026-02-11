@@ -5,6 +5,7 @@
 
 import { workoutTemplates, getWorkout, calculateWorkoutDuration } from '../data/workouts.js';
 import { getExercise, CATEGORY_INFO } from '../data/exercises.js';
+import { navigateTo } from '../lib/router.js';
 
 export function renderWorkouts(container, data = {}) {
   const filterMinutes = data.filterMinutes || null;
@@ -26,11 +27,11 @@ export function renderWorkouts(container, data = {}) {
         <div class="time-picker">
           ${[5, 15, 20, 25, 30].map(m => `
             <button class="time-chip ${filterMinutes === m ? 'active' : ''}"
-              data-action="filter-time" data-minutes="${m}">
+              data-minutes="${m}">
               ${m} min
             </button>
           `).join('')}
-          ${filterMinutes ? `<button class="time-chip" data-action="filter-time" data-minutes="0">All</button>` : ''}
+          ${filterMinutes ? `<button class="time-chip" data-minutes="0">All</button>` : ''}
         </div>
       </div>
 
@@ -41,7 +42,7 @@ export function renderWorkouts(container, data = {}) {
         </div>
         <div class="flex flex-col gap-8">
           ${filtered.map(w => `
-            <div class="card card-interactive card-sm workout-card" data-action="view-workout" data-workout="${w.id}">
+            <div class="card card-interactive card-sm workout-card" data-workout="${w.id}">
               <div class="workout-card-icon" style="background: ${w.color}20;">
                 ${w.icon}
               </div>
@@ -68,22 +69,33 @@ export function renderWorkouts(container, data = {}) {
     </div>
   `;
 
-  container.onclick = handleClick;
+  // Direct listeners
+  container.querySelectorAll('.time-chip[data-minutes]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const minutes = parseInt(chip.dataset.minutes);
+      navigateTo('workouts', { filterMinutes: minutes || null });
+    });
+  });
+
+  container.querySelectorAll('.workout-card[data-workout]').forEach(card => {
+    card.addEventListener('click', () => {
+      navigateTo('workout-detail', { workoutId: card.dataset.workout });
+    });
+  });
 }
 
 export function renderWorkoutDetail(container, data = {}) {
   const workout = getWorkout(data.workoutId);
   if (!workout) {
-    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
+    navigateTo('workouts');
     return;
   }
 
-  const totalSeconds = calculateWorkoutDuration(workout.exercises);
   const totalSets = workout.exercises.reduce((sum, e) => sum + e.sets, 0);
 
   container.innerHTML = `
     <div class="screen">
-      <button class="back-btn" data-action="back-to-workouts">← Workouts</button>
+      <button class="back-btn" id="back-to-workouts">← Workouts</button>
 
       <div style="text-align: center; padding: 16px 0 24px;">
         <div style="font-size: 3rem; margin-bottom: 8px;">${workout.icon}</div>
@@ -126,44 +138,19 @@ export function renderWorkoutDetail(container, data = {}) {
         }).join('')}
       </div>
 
-      <button class="btn btn-primary btn-lg btn-block" data-action="start-this-workout" data-workout="${workout.id}">
+      <button class="btn btn-primary btn-lg btn-block" id="start-this-workout">
         Start Workout
       </button>
     </div>
   `;
 
-  container.onclick = handleDetailClick;
-}
+  document.getElementById('back-to-workouts').addEventListener('click', () => {
+    navigateTo('workouts');
+  });
 
-function handleClick(e) {
-  const action = e.target.closest('[data-action]');
-  if (!action) return;
-  const type = action.dataset.action;
-
-  if (type === 'filter-time') {
-    const minutes = parseInt(action.dataset.minutes);
-    document.dispatchEvent(new CustomEvent('navigate', {
-      detail: { screen: 'workouts', data: { filterMinutes: minutes || null } }
-    }));
-  } else if (type === 'view-workout') {
-    document.dispatchEvent(new CustomEvent('navigate', {
-      detail: { screen: 'workout-detail', data: { workoutId: action.dataset.workout } }
-    }));
-  }
-}
-
-function handleDetailClick(e) {
-  const action = e.target.closest('[data-action]');
-  if (!action) return;
-  const type = action.dataset.action;
-
-  if (type === 'back-to-workouts') {
-    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
-  } else if (type === 'start-this-workout') {
-    document.dispatchEvent(new CustomEvent('navigate', {
-      detail: { screen: 'active-workout', data: { workoutId: action.dataset.workout } }
-    }));
-  }
+  document.getElementById('start-this-workout').addEventListener('click', () => {
+    navigateTo('active-workout', { workoutId: workout.id });
+  });
 }
 
 function formatDuration(seconds) {

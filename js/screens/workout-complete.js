@@ -4,11 +4,12 @@
 
 import { addSession, getUser, update, loadAll, saveAll } from '../utils/storage.js';
 import { calculateSessionXp, checkStreak, getLevelInfo } from '../utils/xp.js';
+import { navigateTo } from '../lib/router.js';
 
 export function renderWorkoutComplete(container, data = {}) {
   const session = data.session;
   if (!session) {
-    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
+    navigateTo('workouts');
     return;
   }
 
@@ -106,32 +107,25 @@ export function renderWorkoutComplete(container, data = {}) {
           </div>
         </div>
 
-        <button class="btn btn-primary btn-lg btn-block mb-16" data-action="go-home">
+        <button class="btn btn-primary btn-lg btn-block mb-16" id="complete-done-btn">
           Done
         </button>
-        <button class="btn btn-secondary btn-block" data-action="repeat-workout" data-workout="${session.workoutId}">
+        <button class="btn btn-secondary btn-block" id="complete-repeat-btn">
           Repeat Workout
         </button>
       </div>
     </div>
   `;
 
-  // Show confetti
   showConfetti();
 
-  container.onclick = (e) => {
-    const action = e.target.closest('[data-action]');
-    if (!action) return;
-    const type = action.dataset.action;
+  document.getElementById('complete-done-btn').addEventListener('click', () => {
+    navigateTo('home');
+  });
 
-    if (type === 'go-home') {
-      document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
-    } else if (type === 'repeat-workout') {
-      document.dispatchEvent(new CustomEvent('navigate', {
-        detail: { screen: 'active-workout', data: { workoutId: action.dataset.workout } }
-      }));
-    }
-  };
+  document.getElementById('complete-repeat-btn').addEventListener('click', () => {
+    navigateTo('active-workout', { workoutId: session.workoutId });
+  });
 }
 
 function getAvgRating(session) {

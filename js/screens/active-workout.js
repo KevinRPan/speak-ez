@@ -5,6 +5,7 @@
 
 import { getWorkout } from '../data/workouts.js';
 import { getExercise, getRandomPrompt, CATEGORY_INFO } from '../data/exercises.js';
+import { navigateTo } from '../lib/router.js';
 
 let state = null;
 let timerInterval = null;
@@ -14,7 +15,7 @@ export function renderActiveWorkout(cont, data = {}) {
   container = cont;
   const workout = getWorkout(data.workoutId);
   if (!workout) {
-    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
+    navigateTo('workouts');
     return;
   }
 
@@ -264,9 +265,7 @@ function finishWorkout() {
     totalSets: state.sets.length,
   };
 
-  document.dispatchEvent(new CustomEvent('navigate', {
-    detail: { screen: 'workout-complete', data: { session } }
-  }));
+  navigateTo('workout-complete', { session });
 
   state = null;
 }
