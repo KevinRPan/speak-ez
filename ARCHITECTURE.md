@@ -43,6 +43,97 @@ Technical architecture for the Speak-EZ rebuild.
 └───────────────────────────────────────────────┘
 ```
 
+## Hosting & Infrastructure
+
+### Current State
+
+| Component | What's in place | Notes |
+|-----------|----------------|-------|
+| **Static hosting** | Cloudflare Pages (`speak-ez.pages.dev`) | Serves HTML/CSS/JS from repo root, no build step |
+| **API** | 1 Pages Function: `functions/api/feedback.js` | Proxies to Gemini, keeps API key server-side |
+| **Database** | None — `localStorage` only | ~5MB limit, single device, no sync |
+| **Auth** | None | All data is anonymous and local |
+| **Domain** | Cloudflare-assigned `*.pages.dev` | Custom domain can be added via Cloudflare DNS |
+| **CI/CD** | Git push auto-deploys to Cloudflare Pages | No build pipeline yet |
+
+### Do We Need Separate Frontend & Backend?
+
+**Not separate services** — Cloudflare Pages bundles both:
+
+- **Frontend:** Static files served from the repo root (`index.html`, `js/`, `css/`)
+- **Backend:** Pages Functions in `functions/` directory — deployed as serverless workers at the edge
+
+This is the right model for the app's scale. No need for a separate API server, container, or additional hosting provider. Everything lives in one repo, one deploy.
+
+### Services Needed (Phased)
+
+```
+Phase 1 (Now)          Phase 2 (Accounts)       Phase 3 (Audio backup)
+─────────────────      ──────────────────────    ─────────────────────
+Cloudflare Pages       + Cloudflare D1           + Cloudflare R2
+  └─ Static assets       └─ User/session data      └─ Audio recordings
+  └─ Pages Functions   + Cloudflare KV
+      └─ /api/feedback   └─ Settings cache
+localStorage           + Auth (see below)
+  └─ All user data       └─ Magic link or
+                            Cloudflare Access
+```
+
+### Auth Options (When Ready)
+
+| Option | Pros | Cons | Recommendation |
+|--------|------|------|----------------|
+| **Cloudflare Access** | Zero code, identity via Google/GitHub/email OTP | Less customizable, requires Cloudflare Zero Trust setup | Good for beta/internal |
+| **Magic link (custom)** | Full control, simple UX (enter email, click link) | Need transactional email (Resend/Mailgun free tier), more code to write | Best for public launch |
+| **Passkeys / WebAuthn** | Passwordless, modern, phishing-resistant | Browser support still uneven, complex implementation | Future consideration |
+| **Firebase Auth / Auth0** | Battle-tested, many providers | External dependency, doesn't align with Cloudflare-first | Avoid unless necessary |
+
+**Recommendation:** Start with **magic link auth** via Pages Functions. Flow:
+
+```
+1. User enters email → POST /api/auth/login
+2. Function generates token, stores in D1, sends email via Resend
+3. User clicks link → GET /api/auth/verify?token=xxx
+4. Function validates, sets HttpOnly cookie (or returns JWT)
+5. Subsequent API calls include cookie/token for auth
+```
+
+### Cloudflare Services Summary
+
+| Service | Free Tier | When to Add | Purpose |
+|---------|-----------|-------------|---------|
+| **Pages** | Unlimited sites, 500 builds/mo | Now (already active) | Static hosting + Functions |
+| **D1** | 5M reads/day, 100K writes/day, 5GB storage | Phase 5 (accounts) | User data, sessions, PRs |
+| **KV** | 100K reads/day, 1K writes/day | Phase 5 (accounts) | Fast cached reads (settings, stats) |
+| **R2** | 10GB storage, 10M reads/mo | Phase 5+ (optional) | Audio recording cloud backup |
+| **Workers AI** | 10K neurons/day | Optional | Whisper transcription fallback |
+| **Queues** | 1M operations/mo | Optional | Async AI feedback processing |
+
+All free tiers are generous for an early-stage app. No payment required until significant scale.
+
+### Why Cloudflare Over Alternatives
+
+| Alternative | Why Not |
+|-------------|---------|
+| **Vercel/Netlify** | Good for frontend, but backend would need a separate service for D1/KV/R2. Cloudflare is all-in-one. |
+| **AWS (Amplify, Lambda, etc.)** | Overkill complexity. Dozens of services to configure. Expensive at low scale. |
+| **Firebase** | Could work (Firestore, Auth, Storage maps well) but locks into Google ecosystem and conflicts with Cloudflare-first principle. |
+| **Supabase** | Strong Postgres + Auth offering, but adds an external dependency and a second bill. |
+| **Railway/Fly.io** | Container-based hosting is unnecessary — this app has no long-running processes. |
+
+**Cloudflare's edge:** Everything runs at the edge (300+ PoPs globally), the free tier covers early growth, and all services (Pages, Functions, D1, KV, R2) are integrated in one platform with one CLI (`wrangler`).
+
+### Infrastructure TODO
+
+- [ ] Verify Cloudflare Pages project is connected to this GitHub repo for auto-deploy
+- [ ] Confirm `GEMINI_API_KEY` is set in Cloudflare Pages dashboard (production + preview)
+- [ ] Add custom domain when ready (Cloudflare DNS → Pages)
+- [ ] Create D1 database when starting Phase 5: `npx wrangler d1 create speak-ez-db`
+- [ ] Create KV namespace when starting Phase 5: `npx wrangler kv namespace create SETTINGS_CACHE`
+- [ ] Create R2 bucket if adding audio backup: `npx wrangler r2 bucket create speak-ez-audio`
+- [ ] Set up transactional email (Resend free tier) when adding auth
+- [ ] Add `wrangler.toml` bindings for D1/KV/R2 as each service is provisioned
+
 ## Data Model
 
 ### Core Entities

@@ -8,5 +8,26 @@ pages_build_output_dir = "."
 directory = "."
 
 # Environment variables - set in Cloudflare dashboard, NOT here
-# Go to: Workers & Pages > speak-sharp > Settings > Environment variables
+# Go to: Workers & Pages > speak-ez > Settings > Environment variables
 # Add: GEMINI_API_KEY = "your-gemini-key"
+
+# --- Future bindings (uncomment as services are provisioned) ---
+
+# D1 Database (Phase 5 - accounts & sync)
+# Create with: npx wrangler d1 create speak-ez-db
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "speak-ez-db"
+# database_id = "<your-database-id>"
+
+# KV Namespace (Phase 5 - fast cached reads)
+# Create with: npx wrangler kv namespace create SETTINGS_CACHE
+# [[kv_namespaces]]
+# binding = "SETTINGS_CACHE"
+# id = "<your-kv-namespace-id>"
+
+# R2 Bucket (Phase 5+ - audio recording storage)
+# Create with: npx wrangler r2 bucket create speak-ez-audio
+# [[r2_buckets]]
+# binding = "AUDIO_BUCKET"
+# bucket_name = "speak-ez-audio"
