@@ -15,8 +15,6 @@ export function renderWorkouts(container, data = {}) {
 
   container.innerHTML = `
     <div class="screen">
-      <button class="back-btn" data-action="back">← Back</button>
-
       <div class="h1 mb-8">Choose Workout</div>
       <div class="subtitle mb-24">Pick a template or set your available time.</div>
 
@@ -142,9 +140,7 @@ function handleClick(e) {
   if (!action) return;
   const type = action.dataset.action;
 
-  if (type === 'back') {
-    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'home' } }));
-  } else if (type === 'filter-time') {
+  if (type === 'filter-time') {
     const minutes = parseInt(action.dataset.minutes);
     document.dispatchEvent(new CustomEvent('navigate', {
       detail: { screen: 'workouts', data: { filterMinutes: minutes || null } }

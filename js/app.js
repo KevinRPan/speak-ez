@@ -3,7 +3,6 @@
  * Handles routing, navigation, and app initialization
  */
 
-import { renderHome } from './screens/home.js';
 import { renderWorkouts, renderWorkoutDetail } from './screens/workouts.js';
 import { renderActiveWorkout, cleanupActiveWorkout } from './screens/active-workout.js';
 import { renderWorkoutComplete } from './screens/workout-complete.js';
@@ -15,7 +14,6 @@ import { getLevelInfo, checkStreak } from './utils/xp.js';
 
 // Screen registry
 const screens = {
-  'home': renderHome,
   'workouts': renderWorkouts,
   'workout-detail': renderWorkoutDetail,
   'active-workout': renderActiveWorkout,
@@ -27,13 +25,13 @@ const screens = {
 
 // Nav tab to screen mapping
 const navTabs = {
-  'home': 'home',
+  'home': 'workouts',
   'history': 'history',
   'exercises': 'exercises',
   'profile': 'profile',
 };
 
-let currentScreen = 'home';
+let currentScreen = 'workouts';
 
 function init() {
   // Initialize storage
@@ -55,8 +53,8 @@ function init() {
     });
   });
 
-  // Initial render
-  navigateTo('home');
+  // Initial render — go straight to workouts
+  navigateTo('workouts');
 }
 
 function navigateTo(screen, data = {}) {
@@ -89,10 +87,9 @@ function navigateTo(screen, data = {}) {
   updateNav(screen);
 
   // Show/hide nav and header based on screen
-  const hideAll = ['active-workout', 'workout-complete'].includes(screen);
-  const hideHeader = hideAll || screen === 'home'; // Home has its own hero
-  document.querySelector('.header').style.display = hideHeader ? 'none' : '';
-  document.querySelector('.bottom-nav').style.display = hideAll ? 'none' : '';
+  const hideChrome = ['active-workout', 'workout-complete'].includes(screen);
+  document.querySelector('.header').style.display = hideChrome ? 'none' : '';
+  document.querySelector('.bottom-nav').style.display = hideChrome ? 'none' : '';
 }
 
 function updateHeader() {
@@ -112,7 +109,6 @@ function updateHeader() {
 function updateNav(screen) {
   // Map screens to their parent nav tab
   const screenToTab = {
-    'home': 'home',
     'workouts': 'home',
     'workout-detail': 'home',
     'active-workout': null,

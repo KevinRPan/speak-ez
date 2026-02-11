@@ -8,7 +8,7 @@ import { calculateSessionXp, checkStreak, getLevelInfo } from '../utils/xp.js';
 export function renderWorkoutComplete(container, data = {}) {
   const session = data.session;
   if (!session) {
-    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'home' } }));
+    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
     return;
   }
 
@@ -125,7 +125,7 @@ export function renderWorkoutComplete(container, data = {}) {
     const type = action.dataset.action;
 
     if (type === 'go-home') {
-      document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'home' } }));
+      document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
     } else if (type === 'repeat-workout') {
       document.dispatchEvent(new CustomEvent('navigate', {
         detail: { screen: 'active-workout', data: { workoutId: action.dataset.workout } }
