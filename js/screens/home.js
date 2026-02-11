@@ -1,6 +1,6 @@
 /**
  * Home Screen — the main dashboard
- * Shows streak, weekly progress, and quick-start workout options
+ * Shows hero branding, streak, weekly progress, and quick-start options
  */
 
 import { getUser, getHistory } from '../utils/storage.js';
@@ -36,24 +36,30 @@ export function renderHome(container) {
 
   container.innerHTML = `
     <div class="screen">
-      <!-- Greeting & Streak -->
-      <div class="mb-24">
-        <div class="h1 mb-8">${greeting}</div>
-        <div class="subtitle">Ready to sharpen your communication?</div>
+      <!-- Hero Branding -->
+      <div class="hero">
+        <div class="hero-brand">Speak<span class="brand-accent">-EZ</span></div>
+        <div class="hero-tagline">${greeting}. Ready to train?</div>
       </div>
 
-      <!-- Streak & Weekly Progress -->
-      <div class="card mb-16">
-        <div class="flex items-center justify-between mb-12">
-          <div class="streak-display">
-            <div class="streak-count">${streakInfo.streak}</div>
-            <div class="streak-unit">day<br>streak</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="h3">${weeklyCount} / ${user.weeklyGoal}</div>
-            <div class="label">this week</div>
-          </div>
+      <!-- Quick Stats Row -->
+      <div class="stat-row">
+        <div class="stat-pill">
+          <div class="stat-pill-value">${streakInfo.streak}</div>
+          <div class="stat-pill-label">Day Streak</div>
         </div>
+        <div class="stat-pill">
+          <div class="stat-pill-value">${weeklyCount}/${user.weeklyGoal}</div>
+          <div class="stat-pill-label">This Week</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-value">LVL ${level.level}</div>
+          <div class="stat-pill-label">${user.xp} XP</div>
+        </div>
+      </div>
+
+      <!-- Weekly Calendar -->
+      <div class="card mb-16">
         <div class="week-dots">
           ${weekDays.map((day, i) => `
             <div class="week-dot ${daysWithSessions.has(i) ? 'completed' : ''} ${i === dayOfWeek - 1 ? 'today' : ''}">
@@ -74,10 +80,10 @@ export function renderHome(container) {
         <div class="level-xp-text">${level.title} — ${user.xp} XP${level.next ? ` / ${level.next.xp} XP` : ''}</div>
       </div>
 
-      <!-- Start Workout CTA -->
-      <div class="section">
-        <button class="btn btn-primary btn-lg btn-block" data-action="start-workout">
-          Start Workout
+      <!-- Start Training CTA -->
+      <div class="cta-section section">
+        <button class="btn btn-primary btn-block" id="start-training-btn" data-action="start-workout">
+          Start Training
         </button>
       </div>
 
@@ -99,7 +105,7 @@ export function renderHome(container) {
         <div class="section-header">
           <span class="label">Popular workouts</span>
         </div>
-        <div class="flex flex-col gap-8">
+        <div class="workout-grid">
           ${workoutTemplates.slice(0, 4).map(w => `
             <div class="card card-interactive card-sm workout-card" data-action="view-workout" data-workout="${w.id}">
               <div class="workout-card-icon" style="background: ${w.color}20;">
@@ -140,8 +146,17 @@ export function renderHome(container) {
     </div>
   `;
 
-  // Event delegation
+  // Event delegation for all home screen actions
   container.onclick = handleHomeClick;
+
+  // Direct listener as safety net for the CTA button
+  const startBtn = document.getElementById('start-training-btn');
+  if (startBtn) {
+    startBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
+    });
+  }
 }
 
 function handleHomeClick(e) {

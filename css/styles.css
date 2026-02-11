@@ -86,7 +86,7 @@ a {
   height: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 480px;
+  max-width: 600px;
   margin: 0 auto;
   position: relative;
 }
@@ -767,11 +767,14 @@ a {
   display: flex;
   gap: 8px;
   margin-top: 8px;
+  justify-content: space-between;
 }
 
 .week-dot {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  flex: 1;
+  max-width: 48px;
   border-radius: 50%;
   background: var(--bg-elevated);
   border: 2px solid rgba(255, 255, 255, 0.06);
@@ -1177,10 +1180,129 @@ a {
   animation: confetti-fall 2.5s ease-out forwards;
 }
 
+/* === HERO SECTION === */
+.hero {
+  text-align: center;
+  padding: 32px 20px 24px;
+}
+
+.hero-brand {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.hero-brand .brand-accent {
+  color: var(--accent);
+}
+
+.hero-tagline {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* === STAT ROW (home page) === */
+.stat-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stat-row .stat-pill {
+  flex: 1;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 14px 12px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.stat-pill-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-pill-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+/* === CTA SECTION === */
+.cta-section {
+  padding: 0 0 8px;
+}
+
+.cta-section .btn-primary {
+  font-size: 1.15rem;
+  padding: 20px 32px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+}
+
+.cta-section .btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(255, 107, 53, 0.4);
+  transform: translateY(-1px);
+}
+
+.cta-section .btn-primary:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 12px rgba(255, 107, 53, 0.25);
+}
+
+/* === WORKOUT GRID (2-col on wider screens) === */
+.workout-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 500px) {
+  .workout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .workout-grid .workout-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .workout-grid .workout-card-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+    border-radius: 12px;
+  }
+
+  .workout-grid .workout-card-meta {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .workout-grid .workout-card-arrow {
+    display: none;
+  }
+}
+
 /* === MEDIA QUERIES === */
-@media (min-width: 481px) {
+@media (min-width: 601px) {
   #app {
-    border-left: 1px solid rgba(255, 255, 255, 0.04);
-    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .screen {
+    padding: 24px 28px;
   }
 }

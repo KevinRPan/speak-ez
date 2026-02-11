@@ -89,9 +89,10 @@ function navigateTo(screen, data = {}) {
   updateNav(screen);
 
   // Show/hide nav and header based on screen
-  const hideChrome = ['active-workout', 'workout-complete'].includes(screen);
-  document.querySelector('.header').style.display = hideChrome ? 'none' : '';
-  document.querySelector('.bottom-nav').style.display = hideChrome ? 'none' : '';
+  const hideAll = ['active-workout', 'workout-complete'].includes(screen);
+  const hideHeader = hideAll || screen === 'home'; // Home has its own hero
+  document.querySelector('.header').style.display = hideHeader ? 'none' : '';
+  document.querySelector('.bottom-nav').style.display = hideAll ? 'none' : '';
 }
 
 function updateHeader() {
