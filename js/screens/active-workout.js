@@ -1,6 +1,6 @@
 /**
  * Active Workout Screen — the core workout experience
- * Manages exercise flow, timers, rest periods, and self-ratings
+ * Manages exercise flow, timers, rest periods, self-ratings, and self-recording
  */
 
 import { getWorkout } from '../data/workouts.js';
@@ -10,6 +10,13 @@ import { navigateTo } from '../lib/router.js';
 let state = null;
 let timerInterval = null;
 let container = null;
+
+// Recording state
+let mediaStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingBlobUrl = null;
+let recordingEnabled = false;
 
 export function renderActiveWorkout(cont, data = {}) {
   container = cont;
@@ -35,6 +42,7 @@ export function renderActiveWorkout(cont, data = {}) {
         prompt: getRandomPrompt(ex.exerciseId),
         rating: null,
         completed: false,
+        recordingUrl: null,
       });
     }
   });
@@ -48,6 +56,10 @@ export function renderActiveWorkout(cont, data = {}) {
     startedAt: Date.now(),
     ratings: [],
   };
+
+  // Reset recording state for new workout
+  recordingEnabled = false;
+  stopAndCleanupRecording();
 
   renderCurrentState();
 }
@@ -115,9 +127,20 @@ function renderReady() {
 
       <div class="timer-display">${formatTime(set.duration)}</div>
 
+      <div class="recording-toggle" data-action="toggle-recording">
+        <div class="recording-toggle-left">
+          <span class="recording-toggle-icon">${recordingEnabled ? '🔴' : '📹'}</span>
+          <div>
+            <div class="recording-toggle-label">Record yourself</div>
+            <div class="recording-toggle-hint">Camera &amp; audio for self-review</div>
+          </div>
+        </div>
+        <div class="toggle ${recordingEnabled ? 'on' : ''}" data-action="toggle-recording"></div>
+      </div>
+
       <div class="workout-controls">
         <button class="btn btn-timer-start btn-block" data-action="start-timer">
-          Start Set
+          ${recordingEnabled ? '📹 Start Set &amp; Record' : 'Start Set'}
         </button>
       </div>
 
@@ -149,11 +172,21 @@ function renderActive() {
         </div>
       </div>
 
-      <div class="exercise-display">
-        <div class="exercise-display-icon">${catInfo.icon}</div>
-        <div class="exercise-display-name">${set.exercise.name}</div>
-        <div class="exercise-display-set">Set ${set.setNumber} of ${set.totalSets}</div>
-      </div>
+      ${recordingEnabled ? `
+        <div class="video-preview-container">
+          <video id="video-preview" class="video-preview" autoplay muted playsinline></video>
+          <div class="recording-indicator">
+            <span class="recording-dot"></span>
+            REC
+          </div>
+        </div>
+      ` : `
+        <div class="exercise-display">
+          <div class="exercise-display-icon">${catInfo.icon}</div>
+          <div class="exercise-display-name">${set.exercise.name}</div>
+          <div class="exercise-display-set">Set ${set.setNumber} of ${set.totalSets}</div>
+        </div>
+      `}
 
       ${set.prompt ? `
         <div class="prompt-card">
@@ -172,16 +205,37 @@ function renderActive() {
   `;
 
   container.onclick = handleActiveClick;
+
+  // Attach video stream to preview element if recording
+  if (recordingEnabled && mediaStream) {
+    const videoEl = document.getElementById('video-preview');
+    if (videoEl) {
+      videoEl.srcObject = mediaStream;
+    }
+  }
+
   startTimer();
 }
 
 function renderRating() {
   const set = state.sets[state.currentIndex];
+  const hasRecording = !!set.recordingUrl;
 
   container.innerHTML = `
     <div class="screen">
       <div class="rating-section">
         <div class="exercise-display-name mb-16">${set.exercise.name}</div>
+
+        ${hasRecording ? `
+          <div class="playback-section">
+            <div class="playback-header">
+              <span class="recording-toggle-icon">📹</span>
+              <span>Review your recording</span>
+            </div>
+            <video id="playback-video" class="playback-video" controls playsinline src="${set.recordingUrl}"></video>
+          </div>
+        ` : ''}
+
         <div class="rating-question">How did that set feel?</div>
         <div class="rating-stars">
           ${[1, 2, 3, 4, 5].map(n => `
@@ -231,6 +285,7 @@ function renderRest() {
 
 function finishWorkout() {
   clearInterval(timerInterval);
+  stopAndCleanupRecording();
   const totalDuration = Math.round((Date.now() - state.startedAt) / 1000);
 
   // Build session data
@@ -265,9 +320,110 @@ function finishWorkout() {
     totalSets: state.sets.length,
   };
 
+  // Revoke any remaining blob URLs
+  state.sets.forEach(set => {
+    if (set.recordingUrl) {
+      URL.revokeObjectURL(set.recordingUrl);
+    }
+  });
+
   navigateTo('workout-complete', { session });
 
   state = null;
+}
+
+// === Recording Logic ===
+
+async function startRecording() {
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: true,
+    });
+
+    recordedChunks = [];
+
+    // Pick a supported MIME type
+    const mimeType = getSupportedMimeType();
+    const options = mimeType ? { mimeType } : {};
+
+    mediaRecorder = new MediaRecorder(mediaStream, options);
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        recordedChunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.start(1000); // collect data in 1s chunks
+    return true;
+  } catch (err) {
+    console.warn('Recording failed to start:', err);
+    recordingEnabled = false;
+    mediaStream = null;
+    mediaRecorder = null;
+    return false;
+  }
+}
+
+function stopRecording() {
+  return new Promise((resolve) => {
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+      stopMediaTracks();
+      resolve(null);
+      return;
+    }
+
+    mediaRecorder.onstop = () => {
+      const mimeType = mediaRecorder.mimeType || 'video/webm';
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      recordedChunks = [];
+
+      // Revoke previous blob URL if any
+      if (recordingBlobUrl) {
+        URL.revokeObjectURL(recordingBlobUrl);
+      }
+      recordingBlobUrl = URL.createObjectURL(blob);
+
+      stopMediaTracks();
+      resolve(recordingBlobUrl);
+    };
+
+    mediaRecorder.stop();
+  });
+}
+
+function stopMediaTracks() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+  mediaRecorder = null;
+}
+
+function stopAndCleanupRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try { mediaRecorder.stop(); } catch (e) { /* ignore */ }
+  }
+  stopMediaTracks();
+  recordedChunks = [];
+  if (recordingBlobUrl) {
+    URL.revokeObjectURL(recordingBlobUrl);
+    recordingBlobUrl = null;
+  }
+}
+
+function getSupportedMimeType() {
+  const types = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+    'video/mp4',
+  ];
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
+  return '';
 }
 
 // === Timer Logic ===
@@ -305,8 +461,17 @@ function startRestTimer() {
   }, 1000);
 }
 
-function completeSet() {
+async function completeSet() {
   state.sets[state.currentIndex].completed = true;
+
+  // Stop recording and save the blob URL to this set
+  if (recordingEnabled && mediaRecorder) {
+    const url = await stopRecording();
+    if (url) {
+      state.sets[state.currentIndex].recordingUrl = url;
+    }
+  }
+
   state.phase = 'rating';
   renderCurrentState();
 }
@@ -323,12 +488,21 @@ function advanceToNext() {
 
 // === Event Handlers ===
 
-function handleReadyClick(e) {
+async function handleReadyClick(e) {
   const action = e.target.closest('[data-action]');
   if (!action) return;
   const type = action.dataset.action;
 
   if (type === 'start-timer') {
+    // Start recording if enabled
+    if (recordingEnabled) {
+      const started = await startRecording();
+      if (!started) {
+        // Recording failed — continue without it, re-render to show toggle off
+        renderCurrentState();
+        return;
+      }
+    }
     state.phase = 'active';
     renderCurrentState();
   } else if (type === 'quit-workout') {
@@ -342,16 +516,19 @@ function handleReadyClick(e) {
     const set = state.sets[state.currentIndex];
     set.prompt = getRandomPrompt(set.exerciseId) || set.prompt;
     renderCurrentState();
+  } else if (type === 'toggle-recording') {
+    recordingEnabled = !recordingEnabled;
+    renderCurrentState();
   }
 }
 
-function handleActiveClick(e) {
+async function handleActiveClick(e) {
   const action = e.target.closest('[data-action]');
   if (!action) return;
 
   if (action.dataset.action === 'stop-timer') {
     clearInterval(timerInterval);
-    completeSet();
+    await completeSet();
   } else if (action.dataset.action === 'quit-workout') {
     clearInterval(timerInterval);
     if (confirm('Quit this workout?')) {
@@ -376,7 +553,13 @@ function handleRatingClick(e) {
 }
 
 function moveAfterRating() {
+  // Revoke the recording URL for this set since we're moving on
   const set = state.sets[state.currentIndex];
+  if (set.recordingUrl) {
+    URL.revokeObjectURL(set.recordingUrl);
+    set.recordingUrl = null;
+  }
+
   const nextIndex = state.currentIndex + 1;
 
   // If there are more sets and rest is defined, show rest
@@ -414,5 +597,6 @@ function getBadgeType(category) {
 
 export function cleanupActiveWorkout() {
   clearInterval(timerInterval);
+  stopAndCleanupRecording();
   state = null;
 }
