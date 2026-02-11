@@ -73,16 +73,14 @@ function navigateTo(screen, data = {}) {
 
   currentScreen = screen;
 
-  // Get the container
+  // Get the container and clear it for the new screen
   const container = document.querySelector('.screen-container');
   container.scrollTop = 0;
-
-  // Remove previous event listeners by replacing the container content
-  const newContainer = container.cloneNode(false);
-  container.parentNode.replaceChild(newContainer, container);
+  container.innerHTML = '';
+  container.onclick = null;
 
   // Render the screen
-  renderFn(newContainer, data);
+  renderFn(container, data);
 
   // Update header
   updateHeader();

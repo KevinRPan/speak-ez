@@ -119,7 +119,7 @@ export function renderWorkoutComplete(container, data = {}) {
   // Show confetti
   showConfetti();
 
-  container.addEventListener('click', (e) => {
+  container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (!action) return;
     const type = action.dataset.action;
@@ -131,7 +131,7 @@ export function renderWorkoutComplete(container, data = {}) {
         detail: { screen: 'active-workout', data: { workoutId: action.dataset.workout } }
       }));
     }
-  });
+  };
 }
 
 function getAvgRating(session) {

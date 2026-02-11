@@ -70,7 +70,7 @@ export function renderWorkouts(container, data = {}) {
     </div>
   `;
 
-  container.addEventListener('click', handleClick);
+  container.onclick = handleClick;
 }
 
 export function renderWorkoutDetail(container, data = {}) {
@@ -134,7 +134,7 @@ export function renderWorkoutDetail(container, data = {}) {
     </div>
   `;
 
-  container.addEventListener('click', handleDetailClick);
+  container.onclick = handleDetailClick;
 }
 
 function handleClick(e) {

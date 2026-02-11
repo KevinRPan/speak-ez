@@ -118,7 +118,7 @@ export function renderProfile(container) {
     </div>
   `;
 
-  container.addEventListener('click', (e) => {
+  container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (!action) return;
     const type = action.dataset.action;
@@ -146,7 +146,7 @@ export function renderProfile(container) {
         renderProfile(container);
       }
     }
-  });
+  };
 }
 
 function exportData() {

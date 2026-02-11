@@ -39,7 +39,7 @@ export function renderHistory(container) {
     </div>
   `;
 
-  container.addEventListener('click', (e) => {
+  container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (!action) return;
 
@@ -50,7 +50,7 @@ export function renderHistory(container) {
       const session = history[index];
       renderSessionDetail(container, session);
     }
-  });
+  };
 }
 
 function renderSessionDetail(container, session) {
@@ -111,12 +111,12 @@ function renderSessionDetail(container, session) {
     </div>
   `;
 
-  container.addEventListener('click', (e) => {
+  container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (action?.dataset.action === 'back') {
       renderHistory(container);
     }
-  });
+  };
 }
 
 function getAvgRating(session) {
