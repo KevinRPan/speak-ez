@@ -3,10 +3,6 @@ name = "speak-ez"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "."
 
-# Static assets served from root directory
-[assets]
-directory = "."
-
 # Environment variables - set in Cloudflare dashboard, NOT here
 # Go to: Workers & Pages > speak-ez > Settings > Environment variables
 # Add: GEMINI_API_KEY = "your-gemini-key"

@@ -6,6 +6,7 @@
 import { getUser, getHistory } from '../utils/storage.js';
 import { getLevelInfo, getWeeklyCount, checkStreak } from '../utils/xp.js';
 import { workoutTemplates } from '../data/workouts.js';
+import { navigateTo } from '../lib/router.js';
 
 export function renderHome(container) {
   const user = getUser();
@@ -18,7 +19,6 @@ export function renderHome(container) {
   const now = new Date();
   const dayOfWeek = now.getDay() || 7;
 
-  // Figure out which days this week had sessions
   const monday = new Date(now);
   monday.setDate(now.getDate() - dayOfWeek + 1);
   monday.setHours(0, 0, 0, 0);
@@ -36,13 +36,11 @@ export function renderHome(container) {
 
   container.innerHTML = `
     <div class="screen">
-      <!-- Hero Branding -->
       <div class="hero">
         <div class="hero-brand">Speak<span class="brand-accent">-EZ</span></div>
         <div class="hero-tagline">${greeting}. Ready to train?</div>
       </div>
 
-      <!-- Quick Stats Row -->
       <div class="stat-row">
         <div class="stat-pill">
           <div class="stat-pill-value">${streakInfo.streak}</div>
@@ -58,7 +56,6 @@ export function renderHome(container) {
         </div>
       </div>
 
-      <!-- Weekly Calendar -->
       <div class="card mb-16">
         <div class="week-dots">
           ${weekDays.map((day, i) => `
@@ -69,7 +66,6 @@ export function renderHome(container) {
         </div>
       </div>
 
-      <!-- Level Progress -->
       <div class="card card-sm mb-24">
         <div class="level-bar">
           <span class="level-badge">LVL ${level.level}</span>
@@ -80,34 +76,31 @@ export function renderHome(container) {
         <div class="level-xp-text">${level.title} — ${user.xp} XP${level.next ? ` / ${level.next.xp} XP` : ''}</div>
       </div>
 
-      <!-- Start Training CTA -->
       <div class="cta-section section">
-        <button class="btn btn-primary btn-block" id="start-training-btn" data-action="start-workout">
+        <button class="btn btn-primary btn-block" id="start-training-btn">
           Start Training
         </button>
       </div>
 
-      <!-- Quick Pick by Time -->
       <div class="section">
         <div class="section-header">
           <span class="label">Quick pick by time</span>
         </div>
         <div class="time-picker">
-          <button class="time-chip" data-action="quick-time" data-minutes="5">5 min</button>
-          <button class="time-chip" data-action="quick-time" data-minutes="15">15 min</button>
-          <button class="time-chip" data-action="quick-time" data-minutes="20">20 min</button>
-          <button class="time-chip" data-action="quick-time" data-minutes="25">25 min</button>
+          <button class="time-chip" data-minutes="5">5 min</button>
+          <button class="time-chip" data-minutes="15">15 min</button>
+          <button class="time-chip" data-minutes="20">20 min</button>
+          <button class="time-chip" data-minutes="25">25 min</button>
         </div>
       </div>
 
-      <!-- Popular Workouts -->
       <div class="section">
         <div class="section-header">
           <span class="label">Popular workouts</span>
         </div>
         <div class="workout-grid">
           ${workoutTemplates.slice(0, 4).map(w => `
-            <div class="card card-interactive card-sm workout-card" data-action="view-workout" data-workout="${w.id}">
+            <div class="card card-interactive card-sm workout-card" data-workout="${w.id}">
               <div class="workout-card-icon" style="background: ${w.color}20;">
                 ${w.icon}
               </div>
@@ -124,59 +117,25 @@ export function renderHome(container) {
           `).join('')}
         </div>
       </div>
-
-      <!-- Recent Session -->
-      ${history.length > 0 ? `
-        <div class="section">
-          <div class="section-header">
-            <span class="label">Last session</span>
-          </div>
-          <div class="card card-sm card-interactive history-item" data-action="view-session" data-index="0">
-            <div class="history-icon" style="background: ${history[0].color || 'var(--accent)'}20;">
-              ${history[0].icon || '🎯'}
-            </div>
-            <div class="history-info">
-              <div class="history-name">${history[0].workoutName}</div>
-              <div class="history-meta">${formatTimeAgo(history[0].completedAt)} — ${Math.round(history[0].totalDuration / 60)} min</div>
-            </div>
-            <div class="history-xp">+${history[0].xpEarned} XP</div>
-          </div>
-        </div>
-      ` : ''}
     </div>
   `;
 
-  // Event delegation for all home screen actions
-  container.onclick = handleHomeClick;
+  // Direct event listeners — no delegation, no CustomEvent
+  document.getElementById('start-training-btn').addEventListener('click', () => {
+    navigateTo('workouts');
+  });
 
-  // Direct listener as safety net for the CTA button
-  const startBtn = document.getElementById('start-training-btn');
-  if (startBtn) {
-    startBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
+  container.querySelectorAll('.time-chip[data-minutes]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      navigateTo('workouts', { filterMinutes: parseInt(chip.dataset.minutes) });
     });
-  }
-}
+  });
 
-function handleHomeClick(e) {
-  const action = e.target.closest('[data-action]');
-  if (!action) return;
-
-  const type = action.dataset.action;
-
-  if (type === 'start-workout') {
-    document.dispatchEvent(new CustomEvent('navigate', { detail: { screen: 'workouts' } }));
-  } else if (type === 'quick-time') {
-    const minutes = parseInt(action.dataset.minutes);
-    document.dispatchEvent(new CustomEvent('navigate', {
-      detail: { screen: 'workouts', data: { filterMinutes: minutes } }
-    }));
-  } else if (type === 'view-workout') {
-    document.dispatchEvent(new CustomEvent('navigate', {
-      detail: { screen: 'workout-detail', data: { workoutId: action.dataset.workout } }
-    }));
-  }
+  container.querySelectorAll('.workout-card[data-workout]').forEach(card => {
+    card.addEventListener('click', () => {
+      navigateTo('workout-detail', { workoutId: card.dataset.workout });
+    });
+  });
 }
 
 function getGreeting() {
@@ -184,19 +143,4 @@ function getGreeting() {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
-}
-
-function formatTimeAgo(dateStr) {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHrs = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
