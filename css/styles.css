@@ -1155,6 +1155,117 @@ a {
   line-height: 1.5;
 }
 
+/* === RECORDING TOGGLE === */
+.recording-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.recording-toggle:active {
+  background: var(--bg-card-hover);
+}
+
+.recording-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.recording-toggle-icon {
+  font-size: 1.3rem;
+}
+
+.recording-toggle-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.recording-toggle-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+/* === VIDEO PREVIEW (during recording) === */
+.video-preview-container {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 12px 0;
+  background: #000;
+  aspect-ratio: 4 / 3;
+}
+
+.video-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+
+.recording-indicator {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+
+.recording-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: recording-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* === PLAYBACK (rating phase) === */
+.playback-section {
+  margin-bottom: 24px;
+}
+
+.playback-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+.playback-video {
+  width: 100%;
+  border-radius: var(--radius);
+  background: #000;
+  max-height: 300px;
+}
+
 /* === CONFETTI (post-workout celebration) === */
 @keyframes confetti-fall {
   0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
