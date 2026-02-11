@@ -141,7 +141,7 @@ export function renderHome(container) {
   `;
 
   // Event delegation
-  container.addEventListener('click', handleHomeClick);
+  container.onclick = handleHomeClick;
 }
 
 function handleHomeClick(e) {
