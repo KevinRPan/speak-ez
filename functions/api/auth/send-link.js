@@ -1,6 +1,6 @@
 /**
  * POST /api/auth/send-link
- * Accept email, find-or-create user, send magic link via Resend.
+ * Accept email, find-or-create user, send magic link via Brevo.
  * Rate limited: max 3 requests per email per hour.
  */
 
@@ -60,23 +60,23 @@ export async function onRequestPost(context) {
     const origin = new URL(request.url).origin;
     const verifyUrl = `${origin}/api/auth/verify?token=${token}`;
 
-    // Send email via Resend
-    const resendKey = env.RESEND_API_KEY;
-    if (!resendKey) {
+    // Send email via Brevo
+    const brevoKey = env.BREVO_API_KEY;
+    if (!brevoKey) {
       return json({ error: 'Email service not configured' }, 500);
     }
 
-    const emailResponse = await fetch('https://api.resend.com/emails', {
+    const emailResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendKey}`,
+        'api-key': brevoKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Speak-EZ <noreply@speak-ez.app>',
-        to: normalizedEmail,
+        sender: { name: 'Speak-EZ', email: 'noreply@speak-ez.app' },
+        to: [{ email: normalizedEmail }],
         subject: 'Sign in to Speak-EZ',
-        html: `
+        htmlContent: `
           <div style="font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 32px;">
             <h2 style="color: #7c5cfc;">Speak-EZ</h2>
             <p>Click the button below to sign in. This link expires in 15 minutes.</p>
@@ -90,7 +90,7 @@ export async function onRequestPost(context) {
     });
 
     if (!emailResponse.ok) {
-      console.error('Resend error:', await emailResponse.text());
+      console.error('Brevo error:', await emailResponse.text());
       return json({ error: 'Failed to send email' }, 500);
     }
 

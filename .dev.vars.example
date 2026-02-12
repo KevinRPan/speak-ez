@@ -2,4 +2,4 @@
 # .dev.vars is gitignored and won't be committed
 
 GEMINI_API_KEY=your-gemini-api-key-here
-RESEND_API_KEY=your-resend-api-key-here
+BREVO_API_KEY=your-brevo-api-key-here
