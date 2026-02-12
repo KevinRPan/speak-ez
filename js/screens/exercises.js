@@ -29,7 +29,7 @@ export function renderExercises(container) {
         </div>
 
         <!-- Exercise List -->
-        <div class="flex flex-col gap-8">
+        <div class="exercise-list">
           ${filtered.map(ex => {
             const catInfo = CATEGORY_INFO[ex.category];
             return `

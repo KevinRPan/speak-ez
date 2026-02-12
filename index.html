@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0a0a0f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,25 +16,27 @@
 </head>
 <body>
   <div id="app">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-title">Speak-EZ</div>
-      <div class="header-stats">
-        <div class="header-stat">
-          <span class="icon">🔥</span>
-          <span class="value" id="header-streak">0</span>
+    <div class="app-body">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-title">Speak-EZ</div>
+        <div class="header-stats">
+          <div class="header-stat">
+            <span class="icon">🔥</span>
+            <span class="value" id="header-streak">0</span>
+          </div>
+          <div class="header-stat">
+            <span class="value" id="header-xp">0 XP</span>
+          </div>
+          <div class="header-stat">
+            <span class="value" id="header-level">LVL 1</span>
+          </div>
         </div>
-        <div class="header-stat">
-          <span class="value" id="header-xp">0 XP</span>
-        </div>
-        <div class="header-stat">
-          <span class="value" id="header-level">LVL 1</span>
-        </div>
-      </div>
-    </header>
+      </header>
 
-    <!-- Screen Container -->
-    <main class="screen-container"></main>
+      <!-- Screen Container -->
+      <main class="screen-container"></main>
+    </div>
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
