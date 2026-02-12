@@ -40,6 +40,7 @@
 
   --nav-height: 72px;
   --header-height: 56px;
+  --sidebar-width: 220px;
 
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
@@ -89,6 +90,14 @@ a {
   max-width: 600px;
   margin: 0 auto;
   position: relative;
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
 }
 
 /* === HEADER === */
@@ -1431,6 +1440,13 @@ a {
   box-shadow: 0 2px 12px rgba(255, 107, 53, 0.25);
 }
 
+/* === LIST CONTAINERS === */
+.workout-list, .exercise-list, .history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* === WORKOUT GRID (2-col on wider screens) === */
 .workout-grid {
   display: flex;
@@ -1478,5 +1494,128 @@ a {
 
   .screen {
     padding: 24px 28px;
+  }
+}
+
+/* === DESKTOP LAYOUT === */
+@media (min-width: 768px) {
+  #app {
+    max-width: 1200px;
+    flex-direction: row;
+  }
+
+  /* Bottom nav becomes left sidebar */
+  .bottom-nav {
+    position: static;
+    flex-direction: column;
+    width: var(--sidebar-width);
+    height: 100%;
+    flex-shrink: 0;
+    justify-content: flex-start;
+    padding: 20px 0;
+    gap: 4px;
+    border-top: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    order: -1;
+  }
+
+  .nav-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 12px 20px;
+    border-radius: 0;
+    gap: 12px;
+    width: 100%;
+    min-width: unset;
+  }
+
+  .nav-item .nav-label {
+    font-size: 0.85rem;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .nav-item .nav-icon {
+    font-size: 1.2rem;
+  }
+
+  /* Content area */
+  .screen-container {
+    padding-bottom: 16px;
+  }
+
+  .screen {
+    padding: 28px 40px;
+    max-width: 800px;
+  }
+
+  .screen-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .screen-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  /* Grid layouts */
+  .workout-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .exercise-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .workout-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .complete-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* === DESKTOP HOVER STATES === */
+@media (hover: hover) and (pointer: fine) {
+  .card-interactive:hover {
+    background: var(--bg-card-hover);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:hover {
+    background: #ff7d4d;
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-card-hover);
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .time-chip:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .category-chip:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .rating-star:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    transform: scale(1.1);
   }
 }

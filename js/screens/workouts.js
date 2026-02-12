@@ -40,7 +40,7 @@ export function renderWorkouts(container, data = {}) {
         <div class="section-header">
           <span class="label">${filterMinutes ? `Workouts under ${filterMinutes} min` : 'All workouts'}</span>
         </div>
-        <div class="flex flex-col gap-8">
+        <div class="workout-list">
           ${filtered.map(w => `
             <div class="card card-interactive card-sm workout-card" data-workout="${w.id}">
               <div class="workout-card-icon" style="background: ${w.color}20;">

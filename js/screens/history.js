@@ -20,7 +20,7 @@ export function renderHistory(container) {
           <button class="btn btn-primary mt-16" data-action="start-workout">Start First Workout</button>
         </div>
       ` : `
-        <div class="flex flex-col gap-8">
+        <div class="history-list">
           ${history.map((session, i) => `
             <div class="card card-sm card-interactive history-item" data-action="view-session" data-index="${i}">
               <div class="history-icon" style="background: ${session.color || 'var(--accent)'}20;">
