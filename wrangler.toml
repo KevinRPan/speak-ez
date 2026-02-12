@@ -15,7 +15,7 @@ pages_build_output_dir = "."
 [[d1_databases]]
 binding = "DB"
 database_name = "speak-ez-db"
-database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+database_id = "8feb9bc5-c530-4710-89fe-8236f34261eb"
 
 # KV Namespace (Phase 5 - fast cached reads)
 # Create with: npx wrangler kv namespace create SETTINGS_CACHE
