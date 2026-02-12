@@ -73,7 +73,7 @@ export async function onRequestPost(context) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: 'Speak-EZ', email: 'noreply@speak-ez.app' },
+        sender: { name: 'Speak-EZ', email: 'speakez-login@kpan.dev' },
         to: [{ email: normalizedEmail }],
         subject: 'Sign in to Speak-EZ',
         htmlContent: `
