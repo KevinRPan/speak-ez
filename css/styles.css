@@ -959,6 +959,69 @@ a {
   font-size: 0.85rem;
 }
 
+/* === AUTH / ACCOUNT CARD === */
+.auth-prompt {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.auth-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.auth-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.auth-input:focus {
+  border-color: var(--accent);
+}
+
+.auth-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.auth-status {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  min-height: 1.2em;
+}
+
+.auth-status-success {
+  color: var(--success);
+}
+
+.auth-status-error {
+  color: var(--danger);
+}
+
+.auth-email {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.auth-sync-status {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.auth-signed-in .flex {
+  margin-top: 12px;
+}
+
 /* === TOGGLE SWITCH === */
 .toggle {
   width: 46px;

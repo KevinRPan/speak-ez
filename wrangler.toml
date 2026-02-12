@@ -9,12 +9,13 @@ pages_build_output_dir = "."
 
 # --- Future bindings (uncomment as services are provisioned) ---
 
-# D1 Database (Phase 5 - accounts & sync)
+# D1 Database — accounts & sync
 # Create with: npx wrangler d1 create speak-ez-db
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "speak-ez-db"
-# database_id = "<your-database-id>"
+# Then paste the database_id below
+[[d1_databases]]
+binding = "DB"
+database_name = "speak-ez-db"
+database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
 
 # KV Namespace (Phase 5 - fast cached reads)
 # Create with: npx wrangler kv namespace create SETTINGS_CACHE

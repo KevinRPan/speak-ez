@@ -11,8 +11,9 @@ import { renderWorkoutComplete } from './screens/workout-complete.js';
 import { renderHistory } from './screens/history.js';
 import { renderExercises } from './screens/exercises.js';
 import { renderProfile } from './screens/profile.js';
-import { loadAll, getUser } from './utils/storage.js';
+import { loadAll, getUser, pullAndMerge } from './utils/storage.js';
 import { getLevelInfo, checkStreak } from './utils/xp.js';
+import { checkSession, isAuthenticated } from './utils/auth.js';
 
 function init() {
   loadAll();
@@ -42,6 +43,32 @@ function init() {
       if (tabMap[tab]) navigateTo(tabMap[tab]);
     });
   });
+
+  // Handle ?auth=success redirect from magic link
+  const params = new URLSearchParams(window.location.search);
+  const authParam = params.get('auth');
+  if (authParam) {
+    // Clear the URL param
+    window.history.replaceState({}, '', window.location.pathname);
+    if (authParam === 'success') {
+      // Auth succeeded — check session and do full sync
+      checkSession().then(() => {
+        if (isAuthenticated()) {
+          pullAndMerge().then(() => {
+            navigateTo('profile');
+            updateHeader();
+          });
+        }
+      });
+    }
+  } else {
+    // Normal boot — check session in background, sync if authenticated
+    checkSession().then(() => {
+      if (isAuthenticated()) {
+        pullAndMerge().then(() => updateHeader());
+      }
+    });
+  }
 
   navigateTo('home');
 }
