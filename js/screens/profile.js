@@ -4,7 +4,7 @@
 
 import { getUser, getHistory, getSettings, update, loadAll, saveAll, clearAll, pullAndMerge } from '../utils/storage.js';
 import { getLevelInfo, LEVELS, getWeeklyCount } from '../utils/xp.js';
-import { getAuthUser, sendMagicLink, logout as authLogout } from '../utils/auth.js';
+import { getAuthUser, sendMagicLink, logout as authLogout, isSessionChecked, onAuthChange } from '../utils/auth.js';
 
 function renderAccountCard() {
   const authUser = getAuthUser();
@@ -12,7 +12,7 @@ function renderAccountCard() {
     const lastSync = localStorage.getItem('speakez_last_sync');
     const syncText = lastSync ? timeAgo(lastSync) : 'Never';
     return `
-      <div class="card mb-16">
+      <div class="card mb-16" id="account-card">
         <div class="label mb-12">Account</div>
         <div class="auth-signed-in">
           <div class="auth-email">${authUser.email}</div>
@@ -25,7 +25,7 @@ function renderAccountCard() {
       </div>`;
   }
   return `
-    <div class="card mb-16">
+    <div class="card mb-16" id="account-card">
       <div class="label mb-12">Account</div>
       <div class="auth-signed-out">
         <div class="auth-prompt">Sign in to sync across devices</div>
@@ -162,6 +162,19 @@ export function renderProfile(container) {
       </div>
     </div>
   `;
+
+  // If session check hasn't completed yet, re-render account card when it does
+  if (!isSessionChecked()) {
+    const unsub = onAuthChange(() => {
+      unsub();
+      const cardEl = container.querySelector('#account-card');
+      if (cardEl) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = renderAccountCard();
+        cardEl.replaceWith(tmp.firstElementChild);
+      }
+    });
+  }
 
   container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
