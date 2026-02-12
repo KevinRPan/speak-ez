@@ -1,9 +1,53 @@
 /**
- * Profile Screen — stats, level, settings
+ * Profile Screen — stats, level, settings, account
  */
 
-import { getUser, getHistory, getSettings, update, loadAll, saveAll, clearAll } from '../utils/storage.js';
+import { getUser, getHistory, getSettings, update, loadAll, saveAll, clearAll, pullAndMerge } from '../utils/storage.js';
 import { getLevelInfo, LEVELS, getWeeklyCount } from '../utils/xp.js';
+import { getAuthUser, sendMagicLink, logout as authLogout } from '../utils/auth.js';
+
+function renderAccountCard() {
+  const authUser = getAuthUser();
+  if (authUser) {
+    const lastSync = localStorage.getItem('speakez_last_sync');
+    const syncText = lastSync ? timeAgo(lastSync) : 'Never';
+    return `
+      <div class="card mb-16">
+        <div class="label mb-12">Account</div>
+        <div class="auth-signed-in">
+          <div class="auth-email">${authUser.email}</div>
+          <div class="auth-sync-status">Last synced: ${syncText}</div>
+          <div class="flex gap-8 mt-12">
+            <button class="btn btn-sm btn-secondary flex-1" data-action="sync-now">Sync now</button>
+            <button class="btn btn-sm btn-secondary flex-1" data-action="sign-out">Sign out</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="card mb-16">
+      <div class="label mb-12">Account</div>
+      <div class="auth-signed-out">
+        <div class="auth-prompt">Sign in to sync across devices</div>
+        <div class="auth-form">
+          <input type="email" class="auth-input" id="auth-email" placeholder="you@email.com" autocomplete="email" />
+          <button class="btn btn-sm btn-primary" data-action="send-magic-link">Send magic link</button>
+        </div>
+        <div class="auth-status" id="auth-status"></div>
+      </div>
+    </div>`;
+}
+
+function timeAgo(isoString) {
+  const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 export function renderProfile(container) {
   const user = getUser();
@@ -11,9 +55,7 @@ export function renderProfile(container) {
   const settings = getSettings();
   const level = getLevelInfo(user.xp);
 
-  const totalSets = history.reduce((sum, s) => sum + s.setsCompleted, 0);
   const totalMinutes = Math.round(history.reduce((sum, s) => sum + s.totalDuration, 0) / 60);
-  const totalXp = user.xp;
 
   container.innerHTML = `
     <div class="screen">
@@ -50,6 +92,9 @@ export function renderProfile(container) {
           </div>
         </div>
       </div>
+
+      <!-- Account -->
+      ${renderAccountCard()}
 
       <!-- Weekly Goal -->
       <div class="card mb-16">
@@ -145,8 +190,53 @@ export function renderProfile(container) {
         clearAll();
         renderProfile(container);
       }
+    } else if (type === 'send-magic-link') {
+      handleSendLink(container);
+    } else if (type === 'sync-now') {
+      handleSyncNow(container);
+    } else if (type === 'sign-out') {
+      handleSignOut(container);
     }
   };
+}
+
+async function handleSendLink(container) {
+  const emailInput = document.getElementById('auth-email');
+  const statusEl = document.getElementById('auth-status');
+  const email = emailInput?.value?.trim();
+  if (!email) {
+    if (statusEl) statusEl.textContent = 'Please enter your email';
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'Sending...';
+  try {
+    await sendMagicLink(email);
+    if (statusEl) {
+      statusEl.textContent = `Check your email! Link sent to ${email}`;
+      statusEl.className = 'auth-status auth-status-success';
+    }
+  } catch (err) {
+    if (statusEl) {
+      statusEl.textContent = err.message || 'Failed to send link';
+      statusEl.className = 'auth-status auth-status-error';
+    }
+  }
+}
+
+async function handleSyncNow(container) {
+  const syncBtn = container.querySelector('[data-action="sync-now"]');
+  if (syncBtn) syncBtn.textContent = 'Syncing...';
+  try {
+    await pullAndMerge();
+    renderProfile(container);
+  } catch {
+    if (syncBtn) syncBtn.textContent = 'Sync failed';
+  }
+}
+
+async function handleSignOut(container) {
+  await authLogout();
+  renderProfile(container);
 }
 
 function exportData() {
