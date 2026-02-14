@@ -75,6 +75,22 @@ export const exercises = [
     metrics: ['clarity', 'speed'],
   },
   {
+    id: 'push-breathing',
+    name: 'Push Breathing',
+    category: CATEGORIES.WARMUP,
+    description: 'Fire up your diaphragm with sharp, staccato breaths to activate your voice.',
+    instructions: [
+      'Stand tall, hand on your belly',
+      'Take a deep breath in',
+      'Exhale in short, sharp bursts — "HUH HUH HUH" — from the diaphragm',
+      'Feel your belly snap inward with each push',
+      'Reset with a slow inhale, then go again',
+    ],
+    tips: 'This wakes up the engine behind your voice. Your diaphragm is the power source — if it\'s asleep, your voice will be flat. Keep the pushes crisp and percussive.',
+    defaultDuration: 60,
+    metrics: ['breath_support', 'activation'],
+  },
+  {
     id: 'power-pose',
     name: 'Power Pose',
     category: CATEGORIES.WARMUP,

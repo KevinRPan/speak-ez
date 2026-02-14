@@ -3,7 +3,7 @@
  * Manages exercise flow, timers, rest periods, self-ratings, and self-recording
  */
 
-import { getWorkout } from '../data/workouts.js';
+import { getWorkout, randomizeWarmups } from '../data/workouts.js';
 import { getExercise, getRandomPrompt, CATEGORY_INFO } from '../data/exercises.js';
 import { navigateTo } from '../lib/router.js';
 
@@ -30,9 +30,10 @@ export function renderActiveWorkout(cont, data = {}) {
     return;
   }
 
-  // Build flat list of all sets
+  // Build flat list of all sets (randomize warmup exercises each session)
   const sets = [];
-  workout.exercises.forEach((ex, exIndex) => {
+  const workoutExercises = randomizeWarmups(workout.exercises);
+  workoutExercises.forEach((ex, exIndex) => {
     const exercise = getExercise(ex.exerciseId);
     for (let s = 0; s < ex.sets; s++) {
       sets.push({
