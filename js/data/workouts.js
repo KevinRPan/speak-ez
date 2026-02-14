@@ -3,6 +3,31 @@
  * Structured like HEVY workout routines, but for communication skills
  */
 
+import { exercises, CATEGORIES } from './exercises.js';
+
+const warmupExercises = exercises.filter(e => e.category === CATEGORIES.WARMUP);
+
+/**
+ * Randomize warmup exercises in a workout's exercise list.
+ * Each warmup slot gets replaced with a random pick from the warmup pool,
+ * avoiding repeats within the same workout when possible.
+ */
+export function randomizeWarmups(workoutExercises) {
+  const used = new Set();
+  return workoutExercises.map(ex => {
+    const exercise = exercises.find(e => e.id === ex.exerciseId);
+    if (!exercise || exercise.category !== CATEGORIES.WARMUP) return ex;
+
+    // Pick from unused warmups first, fall back to full pool
+    let pool = warmupExercises.filter(w => !used.has(w.id));
+    if (pool.length === 0) pool = warmupExercises;
+
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    used.add(pick.id);
+    return { ...ex, exerciseId: pick.id, duration: ex.duration || pick.defaultDuration };
+  });
+}
+
 export const workoutTemplates = [
   {
     id: 'quick-warmup',
