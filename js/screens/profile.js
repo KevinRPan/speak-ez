@@ -115,6 +115,31 @@ export function renderProfile(container) {
         </div>
       </div>
 
+      <!-- Interview Prep -->
+      <div class="card mb-16">
+        <div class="label mb-12">Interview prep</div>
+        <div class="settings-item">
+          <span class="settings-label">Position</span>
+          <input type="text" class="settings-input" id="interview-position"
+            placeholder="e.g. Product Manager"
+            value="${settings.interviewPosition || ''}" />
+        </div>
+        <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+          <span class="settings-label">Level</span>
+          <div class="time-picker">
+            ${['Entry', 'Mid', 'Senior', 'Lead/Staff', 'Executive'].map(lvl => `
+              <button class="time-chip ${settings.interviewLevel === lvl ? 'active' : ''}"
+                data-action="set-interview-level" data-level="${lvl}">
+                ${lvl}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="interview-hint mt-8">
+          Tailors interview-style prompts and AI feedback to your target role.
+        </div>
+      </div>
+
       <!-- All Levels -->
       <div class="card mb-16">
         <div class="label mb-12">All levels</div>
@@ -176,6 +201,20 @@ export function renderProfile(container) {
     });
   }
 
+  // Save interview position on input (debounced)
+  let _positionTimer = null;
+  const positionInput = container.querySelector('#interview-position');
+  if (positionInput) {
+    positionInput.oninput = () => {
+      clearTimeout(_positionTimer);
+      _positionTimer = setTimeout(() => {
+        const store = loadAll();
+        store.settings.interviewPosition = positionInput.value.trim();
+        saveAll(store);
+      }, 500);
+    };
+  }
+
   container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (!action) return;
@@ -203,6 +242,13 @@ export function renderProfile(container) {
         clearAll();
         renderProfile(container);
       }
+    } else if (type === 'set-interview-level') {
+      const level = action.dataset.level;
+      const store = loadAll();
+      // Toggle off if already selected
+      store.settings.interviewLevel = store.settings.interviewLevel === level ? '' : level;
+      saveAll(store);
+      renderProfile(container);
     } else if (type === 'send-magic-link') {
       handleSendLink(container);
     } else if (type === 'sync-now') {

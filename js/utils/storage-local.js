@@ -22,6 +22,8 @@ export const defaults = {
     restDuration: 30,
     soundEnabled: true,
     notifications: false,
+    interviewPosition: '',
+    interviewLevel: '',
   },
 };
 
