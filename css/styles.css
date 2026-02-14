@@ -1338,6 +1338,176 @@ a {
   max-height: 300px;
 }
 
+/* === AI REVIEW === */
+.ai-review-section {
+  margin: 16px 0 24px;
+  text-align: center;
+}
+
+.ai-review-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+}
+
+.ai-review-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 16px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.ai-review-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-review-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-feedback-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid rgba(124, 92, 252, 0.2);
+  padding: 20px;
+  margin: 16px 0 24px;
+  text-align: left;
+  animation: fadeIn 0.3s ease;
+}
+
+.ai-feedback-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  color: var(--purple);
+}
+
+.ai-feedback-summary {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ai-feedback-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ai-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-score-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.ai-score-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ai-score-fill {
+  height: 100%;
+  background: var(--purple);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.ai-score-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+  width: 28px;
+  text-align: right;
+}
+
+.ai-feedback-list {
+  margin-bottom: 14px;
+}
+
+.ai-feedback-list-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.ai-feedback-item {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 4px 0;
+}
+
+.ai-feedback-item.strength {
+  color: var(--success);
+}
+
+.ai-feedback-item.strength::before {
+  content: '✓ ';
+}
+
+.ai-feedback-item.improvement {
+  color: var(--text-secondary);
+}
+
+.ai-feedback-item.improvement::before {
+  content: '→ ';
+  color: var(--accent);
+}
+
+.ai-feedback-example {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-top: 4px;
+}
+
+.ai-feedback-example-text {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.6;
+  font-style: italic;
+}
+
 /* === CONFETTI (post-workout celebration) === */
 @keyframes confetti-fall {
   0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }

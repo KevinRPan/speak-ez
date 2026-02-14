@@ -16,7 +16,11 @@ let mediaStream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let recordingBlobUrl = null;
+let recordingBlob = null;
 let recordingEnabled = false;
+
+// AI review state
+let feedbackResult = null; // null | 'loading' | { feedback object } | { error: string }
 
 export function renderActiveWorkout(cont, data = {}) {
   container = cont;
@@ -234,6 +238,8 @@ function renderRating() {
             </div>
             <video id="playback-video" class="playback-video" controls playsinline src="${set.recordingUrl}"></video>
           </div>
+
+          ${renderFeedbackSection(set)}
         ` : ''}
 
         <div class="rating-question">How did that set feel?</div>
@@ -254,6 +260,164 @@ function renderRating() {
   `;
 
   container.onclick = handleRatingClick;
+}
+
+// === AI Review ===
+
+function renderFeedbackSection(set) {
+  if (!feedbackResult) {
+    return `
+      <div class="ai-review-section">
+        <button class="btn btn-secondary btn-block" data-action="request-review">
+          ✨ Review My Answer
+        </button>
+        <div class="ai-review-hint">Get AI feedback on your response</div>
+      </div>
+    `;
+  }
+
+  if (feedbackResult === 'loading') {
+    return `
+      <div class="ai-review-section">
+        <div class="ai-review-loading">
+          <div class="ai-review-spinner"></div>
+          <span>Analyzing your response...</span>
+        </div>
+      </div>
+    `;
+  }
+
+  if (feedbackResult.error) {
+    return `
+      <div class="ai-review-section">
+        <div class="ai-review-error">
+          <span>Couldn't get feedback right now.</span>
+          <button class="btn btn-ghost btn-sm" data-action="request-review">Try again</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Render the feedback card
+  const fb = feedbackResult;
+  return `
+    <div class="ai-feedback-card">
+      <div class="ai-feedback-header">
+        <span>✨</span>
+        <span>AI Feedback</span>
+      </div>
+
+      ${fb.summary ? `
+        <div class="ai-feedback-summary">${escapeHtml(fb.summary)}</div>
+      ` : ''}
+
+      ${fb.scores ? `
+        <div class="ai-feedback-scores">
+          ${renderScoreBar('Relevance', fb.scores.relevance)}
+          ${renderScoreBar('Clarity', fb.scores.clarity)}
+          ${renderScoreBar('Structure', fb.scores.structure)}
+        </div>
+      ` : ''}
+
+      ${fb.strengths?.length ? `
+        <div class="ai-feedback-list">
+          <div class="ai-feedback-list-title">Strengths</div>
+          ${fb.strengths.map(s => `<div class="ai-feedback-item strength">${escapeHtml(s)}</div>`).join('')}
+        </div>
+      ` : ''}
+
+      ${fb.improvements?.length ? `
+        <div class="ai-feedback-list">
+          <div class="ai-feedback-list-title">To Improve</div>
+          ${fb.improvements.map(i => `<div class="ai-feedback-item improvement">${escapeHtml(i)}</div>`).join('')}
+        </div>
+      ` : ''}
+
+      ${fb.example ? `
+        <div class="ai-feedback-example">
+          <div class="ai-feedback-list-title">Stronger Answer</div>
+          <div class="ai-feedback-example-text">${escapeHtml(fb.example)}</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderScoreBar(label, value) {
+  if (!value) return '';
+  const pct = Math.round((value / 5) * 100);
+  return `
+    <div class="ai-score">
+      <div class="ai-score-label">${label}</div>
+      <div class="ai-score-bar">
+        <div class="ai-score-fill" style="width: ${pct}%"></div>
+      </div>
+      <div class="ai-score-value">${value}/5</div>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // Strip the data URL prefix (e.g. "data:video/webm;base64,")
+      const base64 = reader.result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function requestReview() {
+  if (!recordingBlob || !state) return;
+
+  const setIndex = state.currentIndex;
+  const set = state.sets[setIndex];
+  feedbackResult = 'loading';
+  renderCurrentState();
+
+  try {
+    const base64 = await blobToBase64(recordingBlob);
+    const mimeType = recordingBlob.type || 'video/webm';
+    const promptText = set.prompt || set.exercise.name;
+
+    const response = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        media: base64,
+        mimeType,
+        prompt: promptText,
+      }),
+    });
+
+    // Check we're still on the same set (user might have moved on)
+    if (!state || state.currentIndex !== setIndex || state.phase !== 'rating') return;
+
+    if (!response.ok) {
+      throw new Error('Request failed');
+    }
+
+    const data = await response.json();
+    feedbackResult = data.feedback || { error: 'No feedback returned' };
+  } catch (err) {
+    // Only update if we're still on the same set
+    if (!state || state.currentIndex !== setIndex || state.phase !== 'rating') return;
+    feedbackResult = { error: err.message || 'Please try again.' };
+  }
+
+  // Re-render if still on the rating screen for this set
+  if (state && state.currentIndex === setIndex && state.phase === 'rating') {
+    renderCurrentState();
+  }
 }
 
 function renderRest() {
@@ -383,6 +547,7 @@ function stopRecording() {
       if (recordingBlobUrl) {
         URL.revokeObjectURL(recordingBlobUrl);
       }
+      recordingBlob = blob; // Keep blob for AI review
       recordingBlobUrl = URL.createObjectURL(blob);
 
       stopMediaTracks();
@@ -407,6 +572,7 @@ function stopAndCleanupRecording() {
   }
   stopMediaTracks();
   recordedChunks = [];
+  recordingBlob = null;
   if (recordingBlobUrl) {
     URL.revokeObjectURL(recordingBlobUrl);
     recordingBlobUrl = null;
@@ -549,16 +715,20 @@ function handleRatingClick(e) {
     moveAfterRating();
   } else if (type === 'skip-rating') {
     moveAfterRating();
+  } else if (type === 'request-review') {
+    requestReview();
   }
 }
 
 function moveAfterRating() {
-  // Revoke the recording URL for this set since we're moving on
+  // Clean up recording and review state for this set
   const set = state.sets[state.currentIndex];
   if (set.recordingUrl) {
     URL.revokeObjectURL(set.recordingUrl);
     set.recordingUrl = null;
   }
+  recordingBlob = null;
+  feedbackResult = null;
 
   const nextIndex = state.currentIndex + 1;
 
