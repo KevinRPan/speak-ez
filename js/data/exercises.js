@@ -464,8 +464,76 @@ export function getExercisesByCategory(category) {
   return exercises.filter(e => e.category === category);
 }
 
-export function getRandomPrompt(exerciseId) {
+export function getRandomPrompt(exerciseId, interviewContext) {
   const exercise = getExercise(exerciseId);
   if (!exercise?.prompts?.length) return null;
+
+  // If interview context is set, try to generate a tailored prompt
+  if (interviewContext?.position && INTERVIEW_PROMPTS[exerciseId]) {
+    const templates = INTERVIEW_PROMPTS[exerciseId];
+    const template = templates[Math.floor(Math.random() * templates.length)];
+    const role = interviewContext.level
+      ? `${interviewContext.level}-level ${interviewContext.position}`
+      : interviewContext.position;
+    return template.replace(/\{role\}/g, role).replace(/\{position\}/g, interviewContext.position);
+  }
+
   return exercise.prompts[Math.floor(Math.random() * exercise.prompts.length)];
 }
+
+/**
+ * Interview-specific prompt templates per exercise.
+ * {role} = "Senior Product Manager", {position} = "Product Manager"
+ */
+const INTERVIEW_PROMPTS = {
+  'structured-response': [
+    'Tell me about yourself and why you\'re a great fit for a {role} role.',
+    'Why do you want to work as a {role}?',
+    'What\'s your greatest strength as a {position}?',
+    'Describe a challenging project you led as a {position}.',
+    'Tell me about a time you failed in a {position} role and what you learned.',
+    'How do you handle disagreements with your team as a {role}?',
+    'Describe a time you had to make a tough decision as a {position}.',
+    'Where do you see yourself in five years as a {position}?',
+    'What makes you stand out from other {position} candidates?',
+    'Tell me about a time you exceeded expectations in a {position} role.',
+    'How do you prioritize competing deadlines as a {role}?',
+    'Describe your approach to problem-solving as a {position}.',
+    'Tell me about a time you showed leadership as a {role}.',
+    'How do you stay current with trends in your field as a {position}?',
+    'Describe a time you had to learn something quickly for a {position} role.',
+  ],
+  'impromptu': [
+    'What\'s the biggest challenge facing {position}s today?',
+    'What\'s the most underrated skill for a {role}?',
+    'If you could change one thing about how {position}s work, what would it be?',
+    'What advice would you give someone starting out as a {position}?',
+    'What\'s a common misconception about being a {position}?',
+    'How is the {position} role evolving with AI and automation?',
+    'What\'s the most important metric for a {role} to track?',
+    'What separates a good {position} from a great one?',
+  ],
+  'persuasive-pitch': [
+    'Pitch yourself for a {role} position in 60 seconds.',
+    'Convince a hiring manager you\'re the right {role} for their team.',
+    'Argue for why a {role} is critical to a company\'s success.',
+    'Pitch a new initiative you\'d lead as a {role}.',
+    'Convince a skeptical interviewer that your background makes you an ideal {position}.',
+    'Pitch why your team should adopt a new process, from the perspective of a {role}.',
+  ],
+  'storytelling': [
+    'Tell the story of how you decided to become a {position}.',
+    'Share a defining moment in your career as a {position}.',
+    'Tell about a time you turned around a struggling project as a {role}.',
+    'Describe the most impactful thing you\'ve done as a {position}.',
+    'Share a lesson you learned the hard way as a {role}.',
+    'Tell about a time you mentored someone in a {position} role.',
+  ],
+  'concise-messaging': [
+    'Explain what a {position} does to a 10-year-old.',
+    'Summarize your experience as a {position} in 30 seconds.',
+    'Describe your biggest accomplishment as a {role} in one sentence.',
+    'Explain why someone should hire a {role} in three bullet points.',
+    'Pitch the value of the {position} role to a CEO in under a minute.',
+  ],
+};

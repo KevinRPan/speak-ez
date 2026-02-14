@@ -53,7 +53,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json();
-    const { prompt, media, mimeType } = body;
+    const { prompt, media, mimeType, interviewContext } = body;
 
     if (!prompt) {
       return new Response(
@@ -69,7 +69,13 @@ export async function onRequestPost(context) {
 
     if (isMediaReview) {
       // Multimodal: analyze recording + prompt context
-      const systemText = REVIEW_SYSTEM_PROMPT.replace('{{PROMPT}}', prompt);
+      let systemText = REVIEW_SYSTEM_PROMPT.replace('{{PROMPT}}', prompt);
+      if (interviewContext?.position) {
+        const role = interviewContext.level
+          ? `${interviewContext.level}-level ${interviewContext.position}`
+          : interviewContext.position;
+        systemText += `\n\nThe speaker is preparing for interviews for a ${role} position. Tailor your feedback to what an interviewer for this role would expect. Consider whether the answer demonstrates relevant skills, domain knowledge, and the appropriate level of seniority.`;
+      }
       contents = [{
         parts: [
           { text: systemText },

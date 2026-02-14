@@ -968,6 +968,34 @@ a {
   font-size: 0.85rem;
 }
 
+.settings-input {
+  background: var(--bg-input);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-xs);
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  color: var(--text);
+  outline: none;
+  width: 160px;
+  text-align: right;
+  transition: border-color 0.2s;
+}
+
+.settings-input:focus {
+  border-color: var(--accent);
+}
+
+.settings-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.interview-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  padding: 0 16px;
+  line-height: 1.4;
+}
+
 /* === AUTH / ACCOUNT CARD === */
 .auth-prompt {
   color: var(--text-secondary);

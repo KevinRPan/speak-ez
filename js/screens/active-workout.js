@@ -6,6 +6,7 @@
 import { getWorkout, randomizeWarmups } from '../data/workouts.js';
 import { getExercise, getRandomPrompt, CATEGORY_INFO } from '../data/exercises.js';
 import { navigateTo } from '../lib/router.js';
+import { getSettings } from '../utils/storage.js';
 
 let state = null;
 let timerInterval = null;
@@ -21,6 +22,12 @@ let recordingEnabled = false;
 
 // AI review state
 let feedbackResult = null; // null | 'loading' | { feedback object } | { error: string }
+
+function getInterviewContext() {
+  const settings = getSettings();
+  if (!settings.interviewPosition) return null;
+  return { position: settings.interviewPosition, level: settings.interviewLevel };
+}
 
 export function renderActiveWorkout(cont, data = {}) {
   container = cont;
@@ -44,7 +51,7 @@ export function renderActiveWorkout(cont, data = {}) {
         totalSets: ex.sets,
         duration: ex.duration,
         rest: ex.rest,
-        prompt: getRandomPrompt(ex.exerciseId),
+        prompt: getRandomPrompt(ex.exerciseId, getInterviewContext()),
         rating: null,
         completed: false,
         recordingUrl: null,
@@ -390,14 +397,16 @@ async function requestReview() {
     const mimeType = recordingBlob.type || 'video/webm';
     const promptText = set.prompt || set.exercise.name;
 
+    const feedbackBody = { media: base64, mimeType, prompt: promptText };
+    const interviewCtx = getInterviewContext();
+    if (interviewCtx) {
+      feedbackBody.interviewContext = interviewCtx;
+    }
+
     const response = await fetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        media: base64,
-        mimeType,
-        prompt: promptText,
-      }),
+      body: JSON.stringify(feedbackBody),
     });
 
     // Check we're still on the same set (user might have moved on)
@@ -681,7 +690,7 @@ async function handleReadyClick(e) {
     advanceToNext();
   } else if (type === 'new-prompt') {
     const set = state.sets[state.currentIndex];
-    set.prompt = getRandomPrompt(set.exerciseId) || set.prompt;
+    set.prompt = getRandomPrompt(set.exerciseId, getInterviewContext()) || set.prompt;
     renderCurrentState();
   } else if (type === 'toggle-recording') {
     recordingEnabled = !recordingEnabled;
