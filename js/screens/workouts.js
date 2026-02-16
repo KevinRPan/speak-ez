@@ -3,8 +3,8 @@
  * Browse templates, filter by time, or build custom workouts
  */
 
-import { workoutTemplates, getWorkout, calculateWorkoutDuration } from '../data/workouts.js';
-import { getExercise, CATEGORY_INFO } from '../data/exercises.js';
+import { workoutTemplates, getWorkout, calculateWorkoutDuration, warmupExercises } from '../data/workouts.js';
+import { getExercise, CATEGORIES, CATEGORY_INFO } from '../data/exercises.js';
 import { navigateTo } from '../lib/router.js';
 
 export function renderWorkouts(container, data = {}) {
@@ -91,7 +91,10 @@ export function renderWorkoutDetail(container, data = {}) {
     return;
   }
 
-  const totalSets = workout.exercises.reduce((sum, e) => sum + e.sets, 0);
+  // Mutable copy of exercises so user can swap warmups before starting
+  const customExercises = (data.customExercises || workout.exercises).map(ex => ({ ...ex }));
+
+  const totalSets = customExercises.reduce((sum, e) => sum + e.sets, 0);
 
   container.innerHTML = `
     <div class="screen">
@@ -107,7 +110,7 @@ export function renderWorkoutDetail(container, data = {}) {
             <div class="label">min</div>
           </div>
           <div class="text-center">
-            <div class="h3">${workout.exercises.length}</div>
+            <div class="h3">${customExercises.length}</div>
             <div class="label">exercises</div>
           </div>
           <div class="text-center">
@@ -119,11 +122,13 @@ export function renderWorkoutDetail(container, data = {}) {
 
       <!-- Exercise List -->
       <div class="card mb-24">
-        ${workout.exercises.map(ex => {
+        ${customExercises.map((ex, idx) => {
           const exercise = getExercise(ex.exerciseId);
           const catInfo = CATEGORY_INFO[exercise.category];
+          const isWarmup = exercise.category === CATEGORIES.WARMUP;
           return `
-            <div class="exercise-row">
+            <div class="exercise-row ${isWarmup ? 'exercise-row-swappable' : ''}"
+              ${isWarmup ? `data-swap-index="${idx}"` : ''}>
               <div class="exercise-row-dot" style="background: ${catInfo.color};"></div>
               <div class="exercise-row-info">
                 <div class="exercise-row-name">${exercise.name}</div>
@@ -132,7 +137,10 @@ export function renderWorkoutDetail(container, data = {}) {
                   ${ex.rest ? ` · ${ex.rest}s rest` : ''}
                 </div>
               </div>
-              <span class="badge badge-${getBadgeType(exercise.category)}">${catInfo.label}</span>
+              ${isWarmup
+                ? `<button class="warmup-swap-btn" data-swap-index="${idx}">Swap</button>`
+                : `<span class="badge badge-${getBadgeType(exercise.category)}">${catInfo.label}</span>`
+              }
             </div>
           `;
         }).join('')}
@@ -142,14 +150,84 @@ export function renderWorkoutDetail(container, data = {}) {
         Start Workout
       </button>
     </div>
+
+    <!-- Warmup Picker Bottom Sheet -->
+    <div class="warmup-picker-overlay hidden" id="warmup-picker">
+      <div class="warmup-picker-sheet">
+        <div class="warmup-picker-header">
+          <div class="warmup-picker-title">Choose Warmup</div>
+          <button class="btn btn-ghost btn-sm" id="warmup-picker-close">Cancel</button>
+        </div>
+        <div class="warmup-picker-list">
+          ${warmupExercises.map(w => `
+            <div class="warmup-picker-option" data-warmup-id="${w.id}">
+              <div class="warmup-picker-option-info">
+                <div class="warmup-picker-option-name">${w.name}</div>
+                <div class="warmup-picker-option-desc">${w.description}</div>
+              </div>
+              <div class="warmup-picker-option-duration">${formatDuration(w.defaultDuration)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
   `;
+
+  // State for the picker
+  let swapIndex = null;
+  const picker = document.getElementById('warmup-picker');
+  const pickerClose = document.getElementById('warmup-picker-close');
+
+  function openPicker(index) {
+    swapIndex = index;
+    // Mark the currently selected warmup
+    const currentId = customExercises[index].exerciseId;
+    picker.querySelectorAll('.warmup-picker-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.warmupId === currentId);
+    });
+    picker.classList.remove('hidden');
+  }
+
+  function closePicker() {
+    swapIndex = null;
+    picker.classList.add('hidden');
+  }
+
+  // Warmup row tap → open picker
+  container.querySelectorAll('[data-swap-index]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.swapIndex);
+      openPicker(idx);
+    });
+  });
+
+  // Pick a warmup → swap and re-render
+  picker.querySelectorAll('.warmup-picker-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (swapIndex === null) return;
+      const newId = opt.dataset.warmupId;
+      const warmup = warmupExercises.find(w => w.id === newId);
+      customExercises[swapIndex].exerciseId = newId;
+      customExercises[swapIndex].duration = customExercises[swapIndex].duration || warmup.defaultDuration;
+      closePicker();
+      // Re-render with updated exercises
+      renderWorkoutDetail(container, { workoutId: workout.id, customExercises });
+    });
+  });
+
+  // Close picker
+  pickerClose.addEventListener('click', closePicker);
+  picker.addEventListener('click', (e) => {
+    if (e.target === picker) closePicker();
+  });
 
   document.getElementById('back-to-workouts').addEventListener('click', () => {
     navigateTo('workouts');
   });
 
   document.getElementById('start-this-workout').addEventListener('click', () => {
-    navigateTo('active-workout', { workoutId: workout.id });
+    navigateTo('active-workout', { workoutId: workout.id, customExercises });
   });
 }
 
