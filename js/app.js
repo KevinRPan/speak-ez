@@ -11,6 +11,9 @@ import { renderWorkoutComplete } from './screens/workout-complete.js';
 import { renderHistory } from './screens/history.js';
 import { renderExercises } from './screens/exercises.js';
 import { renderProfile } from './screens/profile.js';
+import { renderScenarios } from './screens/scenarios.js';
+import { renderScenarioDetail } from './screens/scenario-detail.js';
+import { renderScenarioPractice, cleanupScenarioPractice } from './screens/scenario-practice.js';
 import { loadAll, getUser, pullAndMerge } from './utils/storage.js';
 import { getLevelInfo, checkStreak } from './utils/xp.js';
 import { checkSession, isAuthenticated } from './utils/auth.js';
@@ -28,9 +31,13 @@ function init() {
       'history': renderHistory,
       'exercises': renderExercises,
       'profile': renderProfile,
+      'scenarios': renderScenarios,
+      'scenario-detail': renderScenarioDetail,
+      'scenario-practice': renderScenarioPractice,
     },
     cleanups: {
       'active-workout': cleanupActiveWorkout,
+      'scenario-practice': cleanupScenarioPractice,
     },
     onHeaderUpdate: updateHeader,
   });
@@ -39,7 +46,7 @@ function init() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
       const tab = item.dataset.tab;
-      const tabMap = { home: 'home', history: 'history', exercises: 'exercises', profile: 'profile' };
+      const tabMap = { home: 'home', history: 'history', scenarios: 'scenarios', profile: 'profile' };
       if (tabMap[tab]) navigateTo(tabMap[tab]);
     });
   });
