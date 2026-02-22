@@ -40,7 +40,7 @@ export function navigateTo(screen, data = {}) {
   if (headerUpdateFn) headerUpdateFn();
   updateNav(screen);
 
-  const hideChrome = ['active-workout', 'workout-complete', 'scenario-practice'].includes(screen);
+  const hideChrome = ['active-workout', 'workout-complete', 'scenario-practice', 'interview-practice'].includes(screen);
   document.querySelector('.header').style.display = hideChrome ? 'none' : '';
   document.querySelector('.bottom-nav').style.display = hideChrome ? 'none' : '';
 }
@@ -58,6 +58,8 @@ function updateNav(screen) {
     'scenarios': 'scenarios',
     'scenario-detail': 'scenarios',
     'scenario-practice': null,
+    'interview-setup': 'interview-setup',
+    'interview-practice': null,
   };
 
   const activeTab = screenToTab[screen] || 'home';

@@ -232,6 +232,29 @@ a {
   background: var(--bg-card-hover);
 }
 
+/* === FORMS === */
+.form-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-input::placeholder {
+  color: var(--text-tertiary);
+}
+
 /* === BUTTONS === */
 .btn {
   display: inline-flex;
