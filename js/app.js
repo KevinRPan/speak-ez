@@ -16,6 +16,7 @@ import { renderScenarioDetail } from './screens/scenario-detail.js';
 import { renderScenarioPractice, cleanupScenarioPractice } from './screens/scenario-practice.js';
 import { renderInterviewSetup } from './screens/interview-setup.js';
 import { renderInterviewPractice, cleanupInterviewPractice } from './screens/interview-practice.js';
+import { renderInterviewDrill, cleanupInterviewDrill } from './screens/interview-drill.js';
 import { loadAll, getUser, pullAndMerge } from './utils/storage.js';
 import { getLevelInfo, checkStreak } from './utils/xp.js';
 import { checkSession, isAuthenticated } from './utils/auth.js';
@@ -38,11 +39,13 @@ function init() {
       'scenario-practice': renderScenarioPractice,
       'interview-setup': renderInterviewSetup,
       'interview-practice': renderInterviewPractice,
+      'interview-drill': renderInterviewDrill,
     },
     cleanups: {
       'active-workout': cleanupActiveWorkout,
       'scenario-practice': cleanupScenarioPractice,
       'interview-practice': cleanupInterviewPractice,
+      'interview-drill': cleanupInterviewDrill,
     },
     onHeaderUpdate: updateHeader,
   });
