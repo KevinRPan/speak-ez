@@ -88,7 +88,7 @@ export async function onRequestPost(context) {
     } else if (isLastRound) {
       roundInstruction = 'This is the final round. React to their last answer, give a brief closing response in character saying you will be in touch, and then provide a complete performance summary.';
     } else {
-      roundInstruction = \`This is round \${round} of \${totalRounds}. Continue the interview naturally. React to their previous answer AND ask a challenging follow-up question that digs deeper into their response.\`;
+      roundInstruction = `This is round ${round} of ${totalRounds}. Continue the interview naturally. React to their previous answer AND ask a challenging follow-up question that digs deeper into their response.`;
     }
 
     const systemText = QA_SYSTEM_PROMPT
@@ -102,14 +102,14 @@ export async function onRequestPost(context) {
 
     if (conversationHistory.length > 0) {
       const historyText = conversationHistory
-        .map(m => \`\${m.role === 'assistant' ? 'Interviewer' : 'Candidate'}: \${m.text}\`)
+        .map(m => `${m.role === 'assistant' ? 'Interviewer' : 'Candidate'}: ${m.text}`)
         .join('\\n');
       
-      contextParts.push({ text: \`Previous conversation:\\n\${historyText}\\n\\nNow listen/read the candidate's latest response:\` });
+      contextParts.push({ text: `Previous conversation:\\n${historyText}\\n\\nNow listen/read the candidate's latest response:` });
     }
 
     if (textFallback && (!media || conversationHistory.length > 0)) {
-      contextParts.push({ text: \`Candidate's transcript: "\${textFallback}"\` });
+      contextParts.push({ text: `Candidate's transcript: "${textFallback}"` });
     }
 
     if (media && mimeType) {
@@ -125,7 +125,7 @@ export async function onRequestPost(context) {
     };
 
     const geminiResponse = await fetch(
-      \`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\${apiKey}\`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
