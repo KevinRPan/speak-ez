@@ -60,6 +60,7 @@ function updateNav(screen) {
     'scenario-practice': null,
     'interview-setup': 'interview-setup',
     'interview-practice': null,
+    'interview-drill': 'interview-setup',
   };
 
   const activeTab = screenToTab[screen] || 'home';
