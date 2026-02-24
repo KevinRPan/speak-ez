@@ -5,7 +5,7 @@
 
 import { exercises, CATEGORIES } from './exercises.js';
 
-const warmupExercises = exercises.filter(e => e.category === CATEGORIES.WARMUP);
+export const warmupExercises = exercises.filter(e => e.category === CATEGORIES.WARMUP);
 
 /**
  * Randomize warmup exercises in a workout's exercise list.

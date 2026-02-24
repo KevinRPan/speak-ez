@@ -37,9 +37,13 @@ export function renderActiveWorkout(cont, data = {}) {
     return;
   }
 
-  // Build flat list of all sets (randomize warmup exercises each session)
+  // Build flat list of all sets
+  // If custom exercises were passed (user swapped warmups), use those directly.
+  // Otherwise, randomize warmup exercises for variety.
   const sets = [];
-  const workoutExercises = randomizeWarmups(workout.exercises);
+  const workoutExercises = data.customExercises
+    ? data.customExercises
+    : randomizeWarmups(workout.exercises);
   workoutExercises.forEach((ex, exIndex) => {
     const exercise = getExercise(ex.exerciseId);
     for (let s = 0; s < ex.sets; s++) {
