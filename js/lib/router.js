@@ -61,6 +61,8 @@ function updateNav(screen) {
     'interview-setup': 'interview-setup',
     'interview-practice': null,
     'interview-drill': 'interview-setup',
+    'interview-upload': 'interview-setup',
+    'interview-history': 'interview-setup',
   };
 
   const activeTab = screenToTab[screen] || 'home';

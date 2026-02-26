@@ -17,6 +17,8 @@ import { renderScenarioPractice, cleanupScenarioPractice } from './screens/scena
 import { renderInterviewSetup } from './screens/interview-setup.js';
 import { renderInterviewPractice, cleanupInterviewPractice } from './screens/interview-practice.js';
 import { renderInterviewDrill, cleanupInterviewDrill } from './screens/interview-drill.js';
+import { renderInterviewUpload } from './screens/interview-upload.js';
+import { renderInterviewHistory } from './screens/interview-history.js';
 import { loadAll, getUser, pullAndMerge } from './utils/storage.js';
 import { getLevelInfo, checkStreak } from './utils/xp.js';
 import { checkSession, isAuthenticated } from './utils/auth.js';
@@ -40,6 +42,8 @@ function init() {
       'interview-setup': renderInterviewSetup,
       'interview-practice': renderInterviewPractice,
       'interview-drill': renderInterviewDrill,
+      'interview-upload': renderInterviewUpload,
+      'interview-history': renderInterviewHistory,
     },
     cleanups: {
       'active-workout': cleanupActiveWorkout,

@@ -10,16 +10,25 @@
 
 const QA_SYSTEM_PROMPT = `You are an expert interviewer conducting a job interview. Here is the context:
 
+INTERVIEW TYPE:
+"{{INTERVIEW_TYPE}}"
+
 JOB DESCRIPTION:
 "{{JOB_DESCRIPTION}}"
 
-COMPANY CONTEXT:
-"{{COMPANY_CONTEXT}}"
+JOB NOTES / COMPANY CONTEXT:
+"{{JOB_NOTES}}"
 
 Your goal is to assess the candidate's skills, experience, and cultural fit for this specific role and company.
 Be professional, challenging, and constructive.
 
 {{ROUND_INSTRUCTION}}
+
+Dynamic follow-up requirement:
+- Read the candidate's latest answer closely.
+- Identify one concrete claim, decision, metric, or tradeoff they mentioned.
+- Ask exactly one follow-up question that probes that specific point.
+- Avoid generic follow-ups that could apply to any answer.
 
 Return your response as JSON with exactly this structure:
 {
@@ -68,7 +77,9 @@ export async function onRequestPost(context) {
       media,
       mimeType,
       textFallback,
+      interviewType,
       jobDescription,
+      jobNotes,
       companyContext,
       conversationHistory = [],
       round = 1,
@@ -91,9 +102,14 @@ export async function onRequestPost(context) {
       roundInstruction = `This is round ${round} of ${totalRounds}. Continue the interview naturally. React to their previous answer AND ask a challenging follow-up question that digs deeper into their response.`;
     }
 
+    const latestCandidateAnswer = getLatestCandidateAnswer(conversationHistory, textFallback);
+
+    const notes = jobNotes || companyContext || 'No specific company context provided.';
+
     const systemText = QA_SYSTEM_PROMPT
+      .replace('{{INTERVIEW_TYPE}}', interviewType || 'Hiring Manager')
       .replace('{{JOB_DESCRIPTION}}', jobDescription)
-      .replace('{{COMPANY_CONTEXT}}', companyContext || 'No specific company context provided.')
+      .replace('{{JOB_NOTES}}', notes)
       .replace('{{ROUND_INSTRUCTION}}', roundInstruction)
       .replace('{{IS_COMPLETE}}', isLastRound ? 'true' : 'false')
       .replace('{{SUMMARY_FIELD}}', isLastRound ? SUMMARY_TEMPLATE : '');
@@ -108,8 +124,12 @@ export async function onRequestPost(context) {
       contextParts.push({ text: `Previous conversation:\\n${historyText}\\n\\nNow listen/read the candidate's latest response:` });
     }
 
-    if (textFallback && (!media || conversationHistory.length > 0)) {
+    if (textFallback) {
       contextParts.push({ text: `Candidate's transcript: "${textFallback}"` });
+    }
+
+    if (latestCandidateAnswer) {
+      contextParts.push({ text: `Latest candidate answer to react to: "${latestCandidateAnswer}"` });
     }
 
     if (media && mimeType) {
@@ -175,4 +195,18 @@ export async function onRequestOptions() {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
+}
+
+function getLatestCandidateAnswer(conversationHistory, textFallback) {
+  if (textFallback && textFallback.trim() && textFallback !== '[Audio response]') {
+    return textFallback.trim();
+  }
+  if (!Array.isArray(conversationHistory)) return '';
+  for (let i = conversationHistory.length - 1; i >= 0; i--) {
+    const msg = conversationHistory[i];
+    if (msg && msg.role === 'user' && msg.text && msg.text !== '[Audio response]') {
+      return msg.text;
+    }
+  }
+  return '';
 }

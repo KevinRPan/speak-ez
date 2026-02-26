@@ -34,8 +34,9 @@ export function renderInterviewPractice(cont, data = {}) {
   }
 
   state = {
+    interviewType: data.interviewType || 'hiring-manager',
     jobDescription: data.jobDescription,
-    companyContext: data.companyContext,
+    jobNotes: data.jobNotes || data.companyContext || '',
     phase: 'qa', // 'qa', 'complete'
     qaMessages: [],
     qaRound: 0,
@@ -358,8 +359,9 @@ async function fetchFirstQuestion() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        interviewType: state.interviewType,
         jobDescription: state.jobDescription,
-        companyContext: state.companyContext,
+        jobNotes: state.jobNotes,
         conversationHistory: [],
         round: 1,
         totalRounds: state.qaTotal,
@@ -406,8 +408,9 @@ async function submitAnswer() {
         media: base64,
         mimeType,
         textFallback: userText, // Pass transcript as well
+        interviewType: state.interviewType,
         jobDescription: state.jobDescription,
-        companyContext: state.companyContext,
+        jobNotes: state.jobNotes,
         conversationHistory: state.qaMessages.map(m => ({
           role: m.role === 'ai' ? 'assistant' : 'user',
           text: m.text,

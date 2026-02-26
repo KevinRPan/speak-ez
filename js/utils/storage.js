@@ -43,6 +43,78 @@ export function addSession(session) {
   return data;
 }
 
+export function addInterviewUploadSession(payload) {
+  const data = loadAll();
+  const nowIso = new Date().toISOString();
+  const overallScore = Number(payload?.feedback?.overallScore || 0);
+  const threadId = payload?.threadId || crypto.randomUUID();
+  const turnIndex = Number(payload?.turnIndex || 1);
+
+  const session = {
+    id: crypto.randomUUID(),
+    threadId,
+    turnIndex,
+    type: 'interview-upload',
+    icon: '📹',
+    color: 'var(--blue)',
+    workoutName: `Interview Upload - ${formatInterviewType(payload?.interviewType)} (Turn ${turnIndex})`,
+    completedAt: nowIso,
+    totalDuration: 0,
+    setsCompleted: 1,
+    totalSets: 1,
+    xpEarned: 0,
+    exercises: [{
+      exerciseName: 'Uploaded interview response',
+      setsCompleted: 1,
+      setsTotal: 1,
+      ratings: overallScore ? [Math.min(5, Math.max(1, Math.round(overallScore / 2)))] : [],
+    }],
+    upload: {
+      fileName: payload?.fileName || 'upload',
+      mimeType: payload?.mimeType || '',
+      interviewType: payload?.interviewType || '',
+      interviewerRole: payload?.interviewerRole || '',
+      interviewScenario: payload?.interviewScenario || '',
+      jobDescription: payload?.jobDescription || '',
+      jobNotes: payload?.jobNotes || '',
+      questionContext: payload?.questionContext || '',
+      nextQuestion: payload?.nextQuestion || '',
+      shouldContinue: payload?.shouldContinue !== false,
+      targetRounds: Number(payload?.targetRounds || 4),
+      turnIndex,
+      threadId,
+      turns: Array.isArray(payload?.turns) ? payload.turns : [],
+      transcript: payload?.transcript || '',
+      transcriptionNotes: payload?.transcriptionNotes || {},
+      feedback: payload?.feedback || {},
+    },
+  };
+
+  data.history.unshift(session);
+  saveAll(data);
+  return session;
+}
+
+export function getInterviewUploadSessions() {
+  const history = loadAll().history;
+  return history.filter(session => session?.type === 'interview-upload');
+}
+
+export function updateInterviewUploadSession(sessionId, updater) {
+  if (!sessionId || typeof updater !== 'function') return null;
+  const data = loadAll();
+  const index = data.history.findIndex(session => session?.id === sessionId && session?.type === 'interview-upload');
+  if (index === -1) return null;
+
+  const current = data.history[index];
+  const next = updater(current);
+  if (!next) return null;
+
+  data.history[index] = next;
+  saveAll(data);
+  return next;
+}
+
 export function getHistory() {
   return loadAll().history;
 }
@@ -57,6 +129,18 @@ export function getSettings() {
 
 export function clearAll() {
   clearLocal();
+}
+
+function formatInterviewType(interviewType) {
+  const map = {
+    'recruiter-screen': 'Recruiter Screen',
+    'hiring-manager': 'Hiring Manager',
+    'behavioral': 'Behavioral',
+    'coding': 'Coding',
+    'system-design': 'System Design',
+    'final-onsite': 'Final Onsite',
+  };
+  return map[interviewType] || 'Interview';
 }
 
 /** Debounced push to server (2s). Only runs when authenticated. */

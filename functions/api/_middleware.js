@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   '/api/auth/send-link',
   '/api/auth/verify',
   '/api/feedback',
+  '/api/interview-video-feedback',
 ];
 
 export async function onRequest(context) {
