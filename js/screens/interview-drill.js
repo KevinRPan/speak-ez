@@ -16,6 +16,9 @@ let recognition = null;
 let liveTranscript = '';
 let finalTranscript = '';
 
+// Optional video capture for recording mode
+let mediaStream = null;
+
 // Timer
 let timerInterval = null;
 let elapsedSeconds = 0;
@@ -31,7 +34,9 @@ export function renderInterviewDrill(cont, data = {}) {
     round: data.round || null,
     question: data.question || null,
     response: '',
-    mode: 'ready', // ready | recording | typing
+    mode: 'ready', // ready | choose-input | recording | typing
+    recordingType: 'audio', // audio | video
+    videoSupported: supportsVideoCapture(),
     isRecording: false,
     feedback: null,
     feedbackLoading: false,
@@ -243,6 +248,7 @@ function startSession() {
   state.question = q;
   state.response = '';
   state.mode = 'ready';
+  state.recordingType = 'audio';
   state.feedback = null;
   state.feedbackError = null;
   state.phase = 'session';
@@ -285,7 +291,7 @@ function renderSession() {
     <div class="screen drill-screen drill-session">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <button class="btn btn-ghost btn-sm" data-action="back-to-round">\u2190 Back</button>
-        ${state.mode !== 'ready' ? `
+        ${state.mode === 'recording' || state.mode === 'typing' ? `
           <div class="drill-timer" id="drill-timer" style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 500; letter-spacing: 0.05em; color: ${elapsedSeconds > 240 ? 'var(--danger)' : elapsedSeconds > 180 ? 'var(--warning)' : 'var(--text)'};">
             ${formatTime(elapsedSeconds)}
           </div>
@@ -324,8 +330,24 @@ function renderSession() {
         </div>
       ` : ''}
 
+      ${state.mode === 'choose-input' ? `
+        <div class="card" style="padding: 14px;">
+          <div class="label" style="margin-bottom: 10px;">Choose recording mode</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="btn btn-primary btn-block" data-action="start-audio-recording">\u{1F399}\uFE0F Audio Only</button>
+            ${state.videoSupported ? `<button class="btn btn-secondary btn-block" data-action="start-video-recording">\u{1F4F9} Video + Audio</button>` : ''}
+            <button class="btn btn-ghost btn-block" data-action="cancel-recording-choice">Cancel</button>
+          </div>
+        </div>
+      ` : ''}
+
       ${state.mode === 'recording' ? `
         <div>
+          ${state.recordingType === 'video' ? `
+            <div class="card" style="margin-bottom: 12px; overflow: hidden; padding: 0;">
+              <video id="drill-video-preview" autoplay muted playsinline style="display: block; width: 100%; max-height: 220px; background: #000;"></video>
+            </div>
+          ` : ''}
           <div class="card" style="min-height: 100px; margin-bottom: 16px; font-size: 0.95rem; line-height: 1.7; color: ${state.response ? 'var(--text)' : 'var(--text-tertiary)'};">
             <span id="drill-live-text">${state.response || 'Listening... Start speaking your answer.'}</span>
           </div>
@@ -383,6 +405,11 @@ function renderSession() {
     });
   }
 
+  if (state.mode === 'recording' && state.recordingType === 'video' && mediaStream) {
+    const previewEl = document.getElementById('drill-video-preview');
+    if (previewEl) previewEl.srcObject = mediaStream;
+  }
+
   container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (!action) return;
@@ -395,7 +422,15 @@ function renderSession() {
       state.phase = 'round';
       render();
     } else if (type === 'start-recording') {
-      startRecording();
+      state.mode = 'choose-input';
+      render();
+    } else if (type === 'start-audio-recording') {
+      startRecording('audio');
+    } else if (type === 'start-video-recording') {
+      startRecording('video');
+    } else if (type === 'cancel-recording-choice') {
+      state.mode = 'ready';
+      render();
     } else if (type === 'stop-recording') {
       stopRecognition();
       stopTimer();
@@ -426,13 +461,25 @@ function renderSession() {
   };
 }
 
-function startRecording() {
+async function startRecording(recordingType = 'audio') {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
+
+  if (recordingType === 'video') {
+    const started = await startVideoCapture();
+    if (!started) {
+      state.mode = 'choose-input';
+      render();
+      return;
+    }
+  } else {
+    stopMediaTracks();
+  }
 
   liveTranscript = '';
   finalTranscript = '';
   state.response = '';
+  state.recordingType = recordingType;
 
   recognition = new SR();
   recognition.continuous = true;
@@ -460,7 +507,7 @@ function startRecording() {
 
   recognition.onend = () => {
     // Auto-restart if still in recording mode
-    if (state?.mode === 'recording') {
+    if (state?.mode === 'recording' && recognition) {
       try { recognition.start(); } catch (e) {}
     }
   };
@@ -477,6 +524,7 @@ function stopRecognition() {
     try { recognition.stop(); } catch (e) {}
     recognition = null;
   }
+  stopMediaTracks();
   if (state) state.isRecording = false;
   liveTranscript = '';
   finalTranscript = '';
@@ -654,7 +702,11 @@ async function fetchFeedback() {
       }),
     });
 
-    if (!response.ok) throw new Error('Failed to get feedback');
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      const message = errData?.error || `Failed to get feedback (${response.status})`;
+      throw new Error(message);
+    }
 
     const data = await response.json();
     state.feedback = data.feedback || data;
@@ -663,7 +715,7 @@ async function fetchFeedback() {
   } catch (err) {
     console.error('Drill feedback error:', err);
     state.feedbackLoading = false;
-    state.feedbackError = 'Could not generate feedback. Please try again.';
+    state.feedbackError = err?.message || 'Could not generate feedback. Please try again.';
   }
 
   updateFeedbackArea();
@@ -718,8 +770,40 @@ function escapeHtml(str) {
 function cleanup() {
   stopTimer();
   stopRecognition();
+  stopMediaTracks();
   liveTranscript = '';
   finalTranscript = '';
+}
+
+async function startVideoCapture() {
+  if (!supportsVideoCapture()) return false;
+  try {
+    stopMediaTracks();
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+    });
+    return true;
+  } catch (err) {
+    console.warn('Video capture failed:', err);
+    alert('Camera + microphone access is required for video recording mode.');
+    return false;
+  }
+}
+
+function stopMediaTracks() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+}
+
+function supportsVideoCapture() {
+  return !!(
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia &&
+    window.MediaRecorder
+  );
 }
 
 export function cleanupInterviewDrill() {

@@ -8,6 +8,8 @@ const PUBLIC_PATHS = [
   '/api/auth/send-link',
   '/api/auth/verify',
   '/api/feedback',
+  '/api/interview-qa',
+  '/api/interview-drill-feedback',
   '/api/interview-video-feedback',
 ];
 
