@@ -41,6 +41,8 @@ export function renderInterviewDrill(cont, data = {}) {
     feedback: null,
     feedbackLoading: false,
     feedbackError: null,
+    lastFeedbackMethod: 'drill',
+    lastUpload: null,
   };
 
   render();
@@ -251,6 +253,8 @@ function startSession() {
   state.recordingType = 'audio';
   state.feedback = null;
   state.feedbackError = null;
+  state.lastFeedbackMethod = 'drill';
+  state.lastUpload = null;
   state.phase = 'session';
   elapsedSeconds = 0;
 
@@ -324,6 +328,10 @@ function renderSession() {
           <button class="btn btn-secondary btn-block" data-action="start-typing">
             \u2328\uFE0F Type Response Instead
           </button>
+          <button class="btn btn-secondary btn-block" data-action="upload-recording">
+            \u{1F4E4} Upload Recording Instead
+          </button>
+          <input id="drill-upload-input" type="file" accept="video/*,audio/*" style="display:none;" />
           <button class="btn btn-ghost btn-block" data-action="skip">
             Skip to another question \u2192
           </button>
@@ -405,6 +413,16 @@ function renderSession() {
     });
   }
 
+  const uploadInput = document.getElementById('drill-upload-input');
+  if (uploadInput) {
+    uploadInput.addEventListener('change', async () => {
+      const file = uploadInput.files?.[0];
+      if (!file) return;
+      await handleUploadedRecording(file);
+      uploadInput.value = '';
+    });
+  }
+
   if (state.mode === 'recording' && state.recordingType === 'video' && mediaStream) {
     const previewEl = document.getElementById('drill-video-preview');
     if (previewEl) previewEl.srcObject = mediaStream;
@@ -424,6 +442,9 @@ function renderSession() {
     } else if (type === 'start-recording') {
       state.mode = 'choose-input';
       render();
+    } else if (type === 'upload-recording') {
+      const input = document.getElementById('drill-upload-input');
+      if (input) input.click();
     } else if (type === 'start-audio-recording') {
       startRecording('audio');
     } else if (type === 'start-video-recording') {
@@ -580,7 +601,11 @@ function renderReview() {
 
   // Auto-fetch feedback if not yet loaded
   if (!fb && !state.feedbackLoading && !state.feedbackError) {
-    fetchFeedback();
+    if (state.lastFeedbackMethod === 'upload' && state.lastUpload) {
+      fetchUploadedFeedback(state.lastUpload.media, state.lastUpload.mimeType);
+    } else {
+      fetchFeedback();
+    }
   }
 
   container.onclick = (e) => {
@@ -600,7 +625,11 @@ function renderReview() {
     } else if (type === 'retry-feedback') {
       state.feedbackError = null;
       state.feedback = null;
-      fetchFeedback();
+      if (state.lastFeedbackMethod === 'upload' && state.lastUpload) {
+        fetchUploadedFeedback(state.lastUpload.media, state.lastUpload.mimeType);
+      } else {
+        fetchFeedback();
+      }
     }
   };
 }
@@ -684,6 +713,7 @@ function renderFeedbackContent() {
 }
 
 async function fetchFeedback() {
+  state.lastFeedbackMethod = 'drill';
   state.feedbackLoading = true;
   updateFeedbackArea();
 
@@ -716,6 +746,67 @@ async function fetchFeedback() {
     console.error('Drill feedback error:', err);
     state.feedbackLoading = false;
     state.feedbackError = err?.message || 'Could not generate feedback. Please try again.';
+  }
+
+  updateFeedbackArea();
+}
+
+async function handleUploadedRecording(file) {
+  state.lastFeedbackMethod = 'upload';
+  state.feedback = null;
+  state.feedbackError = null;
+  state.feedbackLoading = true;
+  state.response = 'Transcribing uploaded recording...';
+  state.phase = 'review';
+  render();
+
+  try {
+    const media = await fileToBase64(file);
+    const mimeType = file.type || 'video/mp4';
+    state.lastUpload = { media, mimeType };
+    await fetchUploadedFeedback(media, mimeType);
+  } catch (err) {
+    state.feedbackLoading = false;
+    state.feedbackError = err?.message || 'Upload failed. Please try another file.';
+    updateFeedbackArea();
+  }
+}
+
+async function fetchUploadedFeedback(media, mimeType) {
+  state.feedbackLoading = true;
+  updateFeedbackArea();
+
+  try {
+    const roundData = FIELDS[state.field]?.rounds?.[state.round];
+    const response = await fetch('/api/interview-video-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        media,
+        mimeType,
+        interviewType: mapRoundToInterviewType(state.round),
+        interviewRole: `${state.level || 'Senior'} ${FIELDS[state.field]?.label || ''} interviewer`,
+        interviewScenario: roundData?.label || 'Interview drill',
+        questionContext: state.question?.q || 'Interview response',
+        currentRound: 1,
+        targetRounds: 1,
+      }),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData?.error || `Failed to analyze upload (${response.status})`);
+    }
+
+    const data = await response.json();
+    state.response = data.transcript || state.response;
+    state.feedback = mapVideoFeedbackToDrillFeedback(data.feedback);
+    state.feedbackLoading = false;
+    state.feedbackError = null;
+  } catch (err) {
+    console.error('Uploaded drill feedback error:', err);
+    state.feedbackLoading = false;
+    state.feedbackError = err?.message || 'Could not generate feedback from upload.';
   }
 
   updateFeedbackArea();
@@ -804,6 +895,50 @@ function supportsVideoCapture() {
     navigator.mediaDevices.getUserMedia &&
     window.MediaRecorder
   );
+}
+
+function mapRoundToInterviewType(roundKey) {
+  if (roundKey === 'coding') return 'coding';
+  if (roundKey === 'system-design' || roundKey === 'ml-system-design') return 'system-design';
+  if (roundKey === 'behavioral') return 'behavioral';
+  return 'hiring-manager';
+}
+
+function mapVideoFeedbackToDrillFeedback(feedback = {}) {
+  const scoresObj = feedback?.scores || {};
+  const scorePairs = [
+    ['Pausing', scoresObj.pausing],
+    ['Language', scoresObj.language],
+    ['Tonality', scoresObj.tonality],
+    ['Pace', scoresObj.pace],
+    ['Structure', scoresObj.structure],
+    ['Interviewer Fit', scoresObj.interviewerFit],
+  ].filter(([, value]) => Number.isFinite(value));
+
+  return {
+    overall_score: Number.isFinite(feedback?.overallScore) ? feedback.overallScore : 6,
+    summary: feedback?.summary || 'Feedback generated from uploaded recording.',
+    scores: scorePairs.map(([criterion, score]) => ({
+      criterion,
+      score,
+      comment: '',
+    })),
+    strengths: Array.isArray(feedback?.strengths) ? feedback.strengths : [],
+    improvements: Array.isArray(feedback?.improvements) ? feedback.improvements : [],
+    example_reframe: feedback?.rewriteExample || '',
+  };
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      resolve(result.split(',')[1] || '');
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export function cleanupInterviewDrill() {

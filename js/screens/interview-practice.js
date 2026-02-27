@@ -144,6 +144,13 @@ function renderQA() {
               </div>
             ` : ''}
 
+            ${!isRecording ? `
+              <div style="margin-bottom: 12px;">
+                <button class="btn btn-secondary btn-block" data-action="upload-recording">📤 Upload Recording Instead</button>
+                <input id="interview-upload-input" type="file" accept="video/*,audio/*" style="display:none;" />
+              </div>
+            ` : ''}
+
             ${isRecording ? `
               ${isVideo ? `
                 <div class="card" style="margin-bottom: 12px; overflow: hidden; padding: 0;">
@@ -200,6 +207,16 @@ function renderQA() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  const uploadInput = document.getElementById('interview-upload-input');
+  if (uploadInput) {
+    uploadInput.addEventListener('change', async () => {
+      const file = uploadInput.files?.[0];
+      if (!file) return;
+      await handleUploadedAnswer(file);
+      uploadInput.value = '';
+    });
+  }
+
   if (isRecording && isVideo && mediaStream) {
     const previewEl = document.getElementById('live-video-preview');
     if (previewEl) previewEl.srcObject = mediaStream;
@@ -245,6 +262,9 @@ function renderQA() {
       }
       recordingBlob = null;
       renderCurrentPhase();
+    } else if (type === 'upload-recording') {
+      const input = document.getElementById('interview-upload-input');
+      if (input) input.click();
     } else if (type === 'submit') {
       await submitAnswer();
     } else if (type === 'finish-interview') {
@@ -497,6 +517,24 @@ async function submitAnswer() {
   }
 
   renderCurrentPhase();
+}
+
+async function handleUploadedAnswer(file) {
+  try {
+    if (recordingBlobUrl) {
+      URL.revokeObjectURL(recordingBlobUrl);
+      recordingBlobUrl = null;
+    }
+
+    recordingBlob = file;
+    recordingBlobUrl = URL.createObjectURL(file);
+    liveTranscript = '';
+    finalTranscript = '';
+    renderCurrentPhase();
+  } catch (err) {
+    console.warn('Failed to load uploaded answer:', err);
+    alert('Could not read this file. Please try another audio/video recording.');
+  }
 }
 
 // === HELPERS ===
