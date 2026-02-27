@@ -1,6 +1,6 @@
 /**
  * Interview Practice Screen
- * Manages: Live transcription (Web Speech API), Audio Recording, and Q&A interactions based on Job/Company data
+ * Manages: Live transcription, audio/video recording, and Q&A interactions
  */
 
 import { navigateTo } from '../lib/router.js';
@@ -8,8 +8,8 @@ import { navigateTo } from '../lib/router.js';
 let state = null;
 let container = null;
 
-// Audio Recording
-let audioStream = null;
+// Media Recording (audio or video)
+let mediaStream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let recordingBlob = null;
@@ -43,8 +43,14 @@ export function renderInterviewPractice(cont, data = {}) {
     qaTotal: 4, // 4 rounds of interview questions
     qaLoading: true,
     feedback: null,
-    isRecording: false
+    isRecording: false,
+    recordingKind: getInitialRecordingKind(),
+    videoSupported: supportsVideoCapture(),
   };
+
+  if (state.recordingKind === 'video' && !state.videoSupported) {
+    state.recordingKind = 'audio';
+  }
 
   elapsedSeconds = 0;
   cleanup();
@@ -90,6 +96,8 @@ function renderCurrentPhase() {
 
 function renderQA() {
   const { qaMessages, qaRound, qaTotal, qaLoading, isRecording } = state;
+  const canUseVideo = state.videoSupported;
+  const isVideo = state.recordingKind === 'video';
 
   container.innerHTML = `
     <div class="screen interview-practice-screen" style="display: flex; flex-direction: column; height: 100%;">
@@ -126,7 +134,22 @@ function renderQA() {
 
         ${!qaLoading && qaRound < qaTotal ? `
           <div class="interview-response-area card mt-12" style="background: var(--bg-elevated); margin-top: 16px;">
+            ${!isRecording ? `
+              <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                <label class="label" style="margin: 0;">Recording Mode</label>
+                <select class="form-input" data-action="set-recording-kind" style="max-width: 180px; padding: 8px 10px;">
+                  <option value="audio" ${!isVideo ? 'selected' : ''}>Audio</option>
+                  ${canUseVideo ? `<option value="video" ${isVideo ? 'selected' : ''}>Video + Audio</option>` : ''}
+                </select>
+              </div>
+            ` : ''}
+
             ${isRecording ? `
+              ${isVideo ? `
+                <div class="card" style="margin-bottom: 12px; overflow: hidden; padding: 0;">
+                  <video id="live-video-preview" autoplay muted playsinline style="display: block; width: 100%; max-height: 220px; background: #000;"></video>
+                </div>
+              ` : ''}
               <div class="live-transcription-box mb-12" style="min-height: 50px; font-size: 0.95rem; color: var(--text-secondary); font-style: italic;">
                 <span id="live-text">Listening...</span>
               </div>
@@ -147,7 +170,10 @@ function renderQA() {
             
             ${recordingBlobUrl && !isRecording ? `
               <div class="qa-review-response mt-12" style="margin-top: 16px;">
-                <audio controls src="${recordingBlobUrl}" style="width: 100%; margin-bottom: 8px;"></audio>
+                ${recordingBlob?.type?.startsWith('video/')
+                  ? `<video controls playsinline src="${recordingBlobUrl}" style="width: 100%; max-height: 280px; margin-bottom: 8px; background: #000;"></video>`
+                  : `<audio controls src="${recordingBlobUrl}" style="width: 100%; margin-bottom: 8px;"></audio>`
+                }
                 <div class="qa-response-actions" style="display: flex; gap: 8px;">
                   <button class="btn btn-ghost" style="flex: 1;" data-action="re-record">↻ Redo</button>
                   <button class="btn btn-primary" style="flex: 2;" data-action="submit">Submit Answer →</button>
@@ -172,6 +198,11 @@ function renderQA() {
   const messagesEl = document.getElementById('interview-messages');
   if (messagesEl) {
     messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  if (isRecording && isVideo && mediaStream) {
+    const previewEl = document.getElementById('live-video-preview');
+    if (previewEl) previewEl.srcObject = mediaStream;
   }
 
   container.onclick = async (e) => {
@@ -202,6 +233,17 @@ function renderQA() {
       recordingBlob = null;
       liveTranscript = '';
       finalTranscript = '';
+      renderCurrentPhase();
+    } else if (type === 'set-recording-kind') {
+      const nextKind = action.value === 'video' ? 'video' : 'audio';
+      if (nextKind === 'video' && !state.videoSupported) return;
+      state.recordingKind = nextKind;
+      localStorage.setItem('speak_ez_interview_recording_kind', nextKind);
+      if (recordingBlobUrl) {
+        URL.revokeObjectURL(recordingBlobUrl);
+        recordingBlobUrl = null;
+      }
+      recordingBlob = null;
       renderCurrentPhase();
     } else if (type === 'submit') {
       await submitAnswer();
@@ -284,16 +326,21 @@ function renderComplete() {
 
 async function startRecording() {
   try {
-    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const wantsVideo = state.recordingKind === 'video' && state.videoSupported;
+    const constraints = wantsVideo
+      ? { audio: true, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } }
+      : { audio: true, video: false };
+
+    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
     recordedChunks = [];
     
     // Reset transcripts
     liveTranscript = '';
     finalTranscript = '';
 
-    const mimeType = getSupportedAudioMimeType();
+    const mimeType = getSupportedMediaMimeType(wantsVideo ? 'video' : 'audio');
     const options = mimeType ? { mimeType } : {};
-    mediaRecorder = new MediaRecorder(audioStream, options);
+    mediaRecorder = new MediaRecorder(mediaStream, options);
 
     mediaRecorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) recordedChunks.push(e.data);
@@ -309,7 +356,7 @@ async function startRecording() {
     return true;
   } catch (err) {
     console.warn('QA recording failed:', err);
-    alert('Microphone access is required to practice interviews.');
+    alert('Camera/microphone access is required to record your answer.');
     return false;
   }
 }
@@ -328,7 +375,7 @@ function stopRecording() {
     }
 
     mediaRecorder.onstop = () => {
-      const mimeType = mediaRecorder.mimeType || 'audio/webm';
+      const mimeType = mediaRecorder.mimeType || (state.recordingKind === 'video' ? 'video/webm' : 'audio/webm');
       const blob = new Blob(recordedChunks, { type: mimeType });
       recordedChunks = [];
 
@@ -385,7 +432,7 @@ async function fetchFirstQuestion() {
 async function submitAnswer() {
   if (!recordingBlob) return;
 
-  const userText = liveTranscript.trim() ? liveTranscript : '[Audio response]';
+  const userText = liveTranscript.trim() ? liveTranscript : (state.recordingKind === 'video' ? '[Video response]' : '[Audio response]');
   state.qaMessages.push({ role: 'user', text: userText });
   state.qaLoading = true;
   renderCurrentPhase();
@@ -455,9 +502,9 @@ async function submitAnswer() {
 // === HELPERS ===
 
 function stopMediaTracks() {
-  if (audioStream) {
-    audioStream.getTracks().forEach(t => t.stop());
-    audioStream = null;
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(t => t.stop());
+    mediaStream = null;
   }
   mediaRecorder = null;
 }
@@ -504,12 +551,27 @@ function formatTime(seconds) {
   return m + ':' + s.toString().padStart(2, '0');
 }
 
-function getSupportedAudioMimeType() {
-  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+function getSupportedMediaMimeType(kind) {
+  const types = kind === 'video'
+    ? ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
+    : ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
   for (const type of types) {
     if (MediaRecorder.isTypeSupported(type)) return type;
   }
   return '';
+}
+
+function supportsVideoCapture() {
+  return !!(
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia &&
+    window.MediaRecorder
+  );
+}
+
+function getInitialRecordingKind() {
+  const stored = localStorage.getItem('speak_ez_interview_recording_kind');
+  return stored === 'video' ? 'video' : 'audio';
 }
 
 function blobToBase64(blob) {

@@ -477,7 +477,7 @@ function stopRecognition() {
     try { recognition.stop(); } catch (e) {}
     recognition = null;
   }
-  state.isRecording = false;
+  if (state) state.isRecording = false;
   liveTranscript = '';
   finalTranscript = '';
 }

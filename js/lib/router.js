@@ -35,7 +35,29 @@ export function navigateTo(screen, data = {}) {
   container.innerHTML = '';
   container.onclick = null;
 
-  renderFn(container, data);
+  try {
+    renderFn(container, data);
+  } catch (err) {
+    console.error(`Failed to render screen: ${screen}`, err);
+    container.innerHTML = `
+      <div class="screen">
+        <div class="card" style="margin-top: 24px;">
+          <div class="h3" style="margin-bottom: 8px;">Something went wrong</div>
+          <div class="text-secondary" style="margin-bottom: 12px;">We hit an error while opening this screen.</div>
+          <button class="btn btn-primary" data-action="router-recover">Back to Interview Setup</button>
+        </div>
+      </div>
+    `;
+    container.onclick = (e) => {
+      const action = e.target.closest('[data-action]');
+      if (action?.dataset.action === 'router-recover') {
+        navigateTo('interview-setup');
+      }
+    };
+    document.querySelector('.header').style.display = '';
+    document.querySelector('.bottom-nav').style.display = '';
+    return;
+  }
 
   if (headerUpdateFn) headerUpdateFn();
   updateNav(screen);
