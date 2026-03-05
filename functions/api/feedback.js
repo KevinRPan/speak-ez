@@ -15,22 +15,29 @@ const REVIEW_SYSTEM_PROMPT = `You are a speaking coach reviewing a practice reco
 
 "{{PROMPT}}"
 
-Listen to the recording carefully. Provide constructive, specific feedback to help them improve their answer. Be encouraging but honest.
+Listen to the recording carefully. Transcribe what they said and provide constructive, specific feedback. Be encouraging but honest.
 
 Return your response as JSON with exactly this structure:
 {
   "summary": "2-3 sentence summary of what the speaker said",
+  "transcript": "verbatim or near-verbatim transcript of the spoken response",
   "scores": {
-    "relevance": <1-5, how well the answer addressed the question>,
-    "clarity": <1-5, how clearly ideas were expressed>,
-    "structure": <1-5, how well-organized the response was>
+    "clarity": <1-10, how clearly ideas were expressed — penalize jargon, vague language, confusing structure>,
+    "structure": <1-10, how well-organized — does it have a clear opening, body, close?>,
+    "confidence": <1-10, assertive language, steady delivery, no excessive hedging — penalize "I think maybe", "I guess", "sort of">,
+    "conciseness": <1-10, direct and to the point — penalize padding, repetition, unnecessary tangents>,
+    "filler_rate": <1-10, frequency of filler words (um, uh, like, you know) — 10=none, 7=occasional, 4=frequent, 1=constant>,
+    "pace": <1-10, speaking speed — 10=ideal 120-160 WPM, penalize if clearly too fast or too slow>
   },
+  "filler_count": <integer count of filler words detected>,
+  "estimated_wpm": <estimated words per minute, or null if unclear>,
+  "session_reaction": <"great" if all scores>=7, "tough" if 2+ scores<=4, otherwise "solid">,
   "strengths": ["specific strength 1", "specific strength 2"],
   "improvements": ["actionable improvement 1", "actionable improvement 2"],
   "example": "A concise example of a stronger way to answer this prompt (2-3 sentences)"
 }
 
-Important: scores must be integers 1-5. Keep strengths and improvements to 2-3 items each. The example should be a brief model answer, not a full script.`;
+Important: scores must be integers 1-10. Keep strengths and improvements to 2-3 items each.`;
 
 export async function onRequestPost(context) {
   const { request, env } = context;

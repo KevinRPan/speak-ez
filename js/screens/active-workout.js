@@ -7,6 +7,7 @@ import { getWorkout, randomizeWarmups } from '../data/workouts.js';
 import { getExercise, getRandomPrompt, CATEGORY_INFO } from '../data/exercises.js';
 import { navigateTo } from '../lib/router.js';
 import { getSettings } from '../utils/storage.js';
+import { analyzeTranscript, getFillerRateScore, getPaceScore, getPaceLabel } from '../utils/transcript-analysis.js';
 
 let state = null;
 let timerInterval = null;
@@ -276,6 +277,15 @@ function renderRating() {
 
 // === AI Review ===
 
+const SCORE_LABELS = {
+  clarity: 'Clarity',
+  structure: 'Structure',
+  confidence: 'Confidence',
+  conciseness: 'Conciseness',
+  filler_rate: 'Filler Rate',
+  pace: 'Pace',
+};
+
 function renderFeedbackSection(set) {
   if (!feedbackResult) {
     return `
@@ -283,7 +293,7 @@ function renderFeedbackSection(set) {
         <button class="btn btn-secondary btn-block" data-action="request-review">
           ✨ Review My Answer
         </button>
-        <div class="ai-review-hint">Get AI feedback on your response</div>
+        <div class="ai-review-hint">Get AI feedback — scores, filler count, pace</div>
       </div>
     `;
   }
@@ -310,8 +320,26 @@ function renderFeedbackSection(set) {
     `;
   }
 
-  // Render the feedback card
   const fb = feedbackResult;
+
+  // Client-side transcript analysis if we have a transcript
+  let transcriptAnalysis = null;
+  if (fb.transcript) {
+    const dur = set.duration || 0;
+    transcriptAnalysis = analyzeTranscript(fb.transcript, dur);
+  }
+
+  // Merge client-side filler/pace scores into the score display
+  const scores = fb.scores || {};
+  if (transcriptAnalysis) {
+    if (scores.filler_rate === undefined && transcriptAnalysis.fillersPerMinute !== null) {
+      scores.filler_rate = getFillerRateScore(transcriptAnalysis.fillersPerMinute);
+    }
+    if (scores.pace === undefined && transcriptAnalysis.wpm !== null) {
+      scores.pace = getPaceScore(transcriptAnalysis.wpm);
+    }
+  }
+
   return `
     <div class="ai-feedback-card">
       <div class="ai-feedback-header">
@@ -323,12 +351,43 @@ function renderFeedbackSection(set) {
         <div class="ai-feedback-summary">${escapeHtml(fb.summary)}</div>
       ` : ''}
 
-      ${fb.scores ? `
+      ${Object.keys(scores).length ? `
         <div class="ai-feedback-scores">
-          ${renderScoreBar('Relevance', fb.scores.relevance)}
-          ${renderScoreBar('Clarity', fb.scores.clarity)}
-          ${renderScoreBar('Structure', fb.scores.structure)}
+          ${Object.entries(scores)
+            .filter(([k]) => SCORE_LABELS[k])
+            .map(([k, v]) => renderScoreBar(SCORE_LABELS[k], v, 10))
+            .join('')}
         </div>
+      ` : ''}
+
+      ${(fb.filler_count > 0 || transcriptAnalysis?.fillerCount > 0) ? (() => {
+        const count = fb.filler_count ?? transcriptAnalysis?.fillerCount ?? 0;
+        const fpm = transcriptAnalysis?.fillersPerMinute ?? null;
+        return `
+          <div class="filler-summary">
+            <span class="filler-count">${count}</span>
+            <span class="filler-label">filler word${count !== 1 ? 's' : ''} detected${fpm !== null ? ` · ${fpm}/min` : ''}</span>
+          </div>
+        `;
+      })() : ''}
+
+      ${transcriptAnalysis?.wpm ? `
+        <div class="pace-summary">
+          <span class="pace-wpm">${transcriptAnalysis.wpm} WPM</span>
+          <span class="pace-label">${getPaceLabel(transcriptAnalysis.wpm)}</span>
+        </div>
+      ` : (fb.estimated_wpm ? `
+        <div class="pace-summary">
+          <span class="pace-wpm">~${fb.estimated_wpm} WPM</span>
+          <span class="pace-label">${getPaceLabel(fb.estimated_wpm)}</span>
+        </div>
+      ` : '')}
+
+      ${(transcriptAnalysis?.highlightedHtml && transcriptAnalysis.fillerCount > 0) ? `
+        <details class="transcript-details">
+          <summary>Transcript (fillers highlighted)</summary>
+          <div class="transcript-text">${transcriptAnalysis.highlightedHtml}</div>
+        </details>
       ` : ''}
 
       ${fb.strengths?.length ? `
@@ -355,16 +414,17 @@ function renderFeedbackSection(set) {
   `;
 }
 
-function renderScoreBar(label, value) {
-  if (!value) return '';
-  const pct = Math.round((value / 5) * 100);
+function renderScoreBar(label, value, maxValue = 10) {
+  if (value === undefined || value === null) return '';
+  const pct = Math.round((value / maxValue) * 100);
+  const color = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';
   return `
     <div class="ai-score">
       <div class="ai-score-label">${label}</div>
       <div class="ai-score-bar">
-        <div class="ai-score-fill" style="width: ${pct}%"></div>
+        <div class="ai-score-fill" style="width: ${pct}%; background: ${color};"></div>
       </div>
-      <div class="ai-score-value">${value}/5</div>
+      <div class="ai-score-value">${value}/${maxValue}</div>
     </div>
   `;
 }
@@ -422,6 +482,15 @@ async function requestReview() {
 
     const data = await response.json();
     feedbackResult = data.feedback || { error: 'No feedback returned' };
+
+    // Persist scores + transcript to this set so session summary can use them
+    if (feedbackResult && !feedbackResult.error) {
+      state.sets[setIndex].feedbackScores = feedbackResult.scores || null;
+      state.sets[setIndex].feedbackTranscript = feedbackResult.transcript || null;
+      state.sets[setIndex].feedbackFillerCount = feedbackResult.filler_count ?? null;
+      state.sets[setIndex].feedbackWpm = feedbackResult.estimated_wpm ?? null;
+      state.sets[setIndex].sessionReaction = feedbackResult.session_reaction || null;
+    }
   } catch (err) {
     // Only update if we're still on the same set
     if (!state || state.currentIndex !== setIndex || state.phase !== 'rating') return;
@@ -486,6 +555,31 @@ function finishWorkout() {
     }
   });
 
+  // Aggregate AI scores and filler data across all sets that had a review
+  const setsWithScores = state.sets.filter(s => s.feedbackScores);
+  let avgAiScores = null;
+  if (setsWithScores.length > 0) {
+    const totals = {};
+    const counts = {};
+    setsWithScores.forEach(s => {
+      Object.entries(s.feedbackScores).forEach(([k, v]) => {
+        totals[k] = (totals[k] || 0) + v;
+        counts[k] = (counts[k] || 0) + 1;
+      });
+    });
+    avgAiScores = {};
+    Object.keys(totals).forEach(k => {
+      avgAiScores[k] = Math.round((totals[k] / counts[k]) * 10) / 10;
+    });
+  }
+
+  const setsWithFillers = state.sets.filter(s => s.feedbackFillerCount !== null && s.feedbackFillerCount !== undefined);
+  const totalFillerCount = setsWithFillers.reduce((a, s) => a + (s.feedbackFillerCount || 0), 0);
+
+  // Use the most dramatic session_reaction from any set
+  const reactions = state.sets.map(s => s.sessionReaction).filter(Boolean);
+  const sessionReaction = reactions.includes('tough') ? 'tough' : reactions.includes('great') ? 'great' : reactions.length ? 'solid' : null;
+
   const session = {
     workoutId: state.workout.id,
     workoutName: state.workout.name,
@@ -496,6 +590,9 @@ function finishWorkout() {
     completedAt: new Date().toISOString(),
     setsCompleted: state.sets.filter(s => s.completed).length,
     totalSets: state.sets.length,
+    avgAiScores,
+    totalFillerCount: setsWithFillers.length > 0 ? totalFillerCount : null,
+    sessionReaction,
   };
 
   // Revoke any remaining blob URLs

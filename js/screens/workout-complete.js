@@ -2,9 +2,10 @@
  * Workout Complete Screen — post-workout summary and celebration
  */
 
-import { addSession, getUser, update, loadAll, saveAll } from '../utils/storage.js';
+import { addSession, getUser, update, loadAll, saveAll, getHistory } from '../utils/storage.js';
 import { calculateSessionXp, checkStreak, getLevelInfo } from '../utils/xp.js';
 import { navigateTo } from '../lib/router.js';
+import { generateSessionReaction } from '../utils/session-feedback.js';
 
 export function renderWorkoutComplete(container, data = {}) {
   const session = data.session;
@@ -15,10 +16,14 @@ export function renderWorkoutComplete(container, data = {}) {
 
   // Calculate XP
   const user = getUser();
+  const historyBeforeSession = getHistory();
   const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
   session.streakDay = streakInfo.streak;
   const xpEarned = calculateSessionXp(session);
   session.xpEarned = xpEarned;
+
+  // Generate WHOOP-style reaction before saving (so history doesn't include this session yet)
+  const reaction = generateSessionReaction(session, historyBeforeSession);
 
   // Update user stats
   const store = loadAll();
@@ -37,9 +42,55 @@ export function renderWorkoutComplete(container, data = {}) {
   const avgRating = getAvgRating(session);
   const totalDuration = Math.round(session.totalDuration / 60);
 
+  const reactionColors = {
+    tough: { bg: 'rgba(124, 92, 252, 0.12)', border: 'var(--purple)', text: 'var(--purple)' },
+    great: { bg: 'rgba(88, 204, 2, 0.12)', border: 'var(--success)', text: 'var(--success)' },
+    milestone: { bg: 'rgba(253, 203, 110, 0.12)', border: 'var(--warning)', text: 'var(--warning)' },
+    solid: { bg: 'rgba(255, 107, 53, 0.10)', border: 'var(--accent)', text: 'var(--accent)' },
+  };
+  const rc = reactionColors[reaction.tone] || reactionColors.solid;
+
   container.innerHTML = `
     <div class="screen">
       <div class="complete-screen">
+
+        <!-- WHOOP-style reaction card -->
+        <div class="reaction-card" style="background: ${rc.bg}; border-color: ${rc.border};">
+          <div class="reaction-tone" style="color: ${rc.text};">${reaction.tone.toUpperCase()}</div>
+          <div class="reaction-headline">${reaction.headline}</div>
+          ${reaction.callout ? `<div class="reaction-callout">${reaction.callout}</div>` : ''}
+        </div>
+
+        ${session.avgAiScores ? `
+          <div class="card mb-16">
+            <div class="label mb-12">Session Scores</div>
+            ${Object.entries(session.avgAiScores).map(([k, v]) => {
+              const labels = { clarity: 'Clarity', structure: 'Structure', confidence: 'Confidence', conciseness: 'Conciseness', filler_rate: 'Filler Rate', pace: 'Pace' };
+              const label = labels[k] || k;
+              const pct = Math.round((v / 10) * 100);
+              const color = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';
+              return `
+                <div class="ai-score">
+                  <div class="ai-score-label">${label}</div>
+                  <div class="ai-score-bar">
+                    <div class="ai-score-fill" style="width: ${pct}%; background: ${color};"></div>
+                  </div>
+                  <div class="ai-score-value">${v}/10</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : ''}
+
+        ${session.totalFillerCount !== null ? `
+          <div class="card card-sm mb-16">
+            <div class="flex items-center justify-between">
+              <span class="label">Filler words this session</span>
+              <span style="font-weight: 700; color: ${session.totalFillerCount <= 5 ? 'var(--success)' : session.totalFillerCount <= 15 ? 'var(--warning)' : 'var(--danger)'};">${session.totalFillerCount}</span>
+            </div>
+          </div>
+        ` : ''}
+
         <div class="complete-icon">${leveledUp ? '🎉' : '💪'}</div>
         <div class="complete-title">Workout Complete!</div>
         <div class="complete-subtitle">${session.workoutName}</div>
@@ -106,6 +157,13 @@ export function renderWorkoutComplete(container, data = {}) {
             ${levelAfter.title} — ${store.user.xp} XP${levelAfter.next ? ` / ${levelAfter.next.xp} XP` : ''}
           </div>
         </div>
+
+        ${reaction.suggestion ? `
+          <div class="card card-sm mb-16" style="border-left: 3px solid var(--purple);">
+            <div class="label mb-4" style="color: var(--purple);">Next Focus</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">${reaction.suggestion}</div>
+          </div>
+        ` : ''}
 
         <button class="btn btn-primary btn-lg btn-block mb-16" id="complete-done-btn">
           Done

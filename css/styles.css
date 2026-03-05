@@ -2641,3 +2641,370 @@ a {
 .drill-timer {
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   NEW FEATURES — Filler Analysis, WHOOP Dashboard, Curriculum
+   ============================================================ */
+
+/* === FILLER MARKS (highlighted transcript) === */
+.filler-mark {
+  background: rgba(255, 107, 53, 0.25);
+  color: var(--accent);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 600;
+}
+
+/* === FILLER & PACE SUMMARY PILLS (in AI feedback) === */
+.filler-summary,
+.pace-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  margin: 8px 0;
+}
+
+.filler-count,
+.pace-wpm {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.filler-label,
+.pace-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* === TRANSCRIPT DETAILS (collapsible) === */
+.transcript-details {
+  margin: 10px 0;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.transcript-details summary {
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.transcript-details summary::before {
+  content: '▶ ';
+  font-size: 0.65rem;
+}
+
+.transcript-details[open] summary::before {
+  content: '▼ ';
+}
+
+.transcript-text {
+  padding: 0 14px 12px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* === WHOOP SESSION REACTION CARD === */
+.reaction-card {
+  border-radius: var(--radius);
+  border: 1px solid;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.reaction-tone {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.reaction-headline {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.reaction-callout {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* === PERFORMANCE SCREEN === */
+.perf-header {
+  padding-bottom: 8px;
+}
+
+.perf-tab-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+
+.perf-tab {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.perf-tab.active {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+/* === WHOOP STATS ROW === */
+.whoop-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.whoop-stat {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.whoop-stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.whoop-stat-label {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* === SKILL RINGS === */
+.skill-rings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  justify-items: center;
+}
+
+.skill-ring-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.skill-ring {
+  overflow: visible;
+}
+
+.skill-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 5;
+}
+
+.skill-ring-fill {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.skill-ring-text {
+  fill: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-family: var(--font);
+}
+
+.skill-ring-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* === INSIGHT CARD === */
+.insight-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--purple-dim);
+  border: 1px solid rgba(124, 92, 252, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.insight-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.insight-text {
+  font-size: 0.83rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* === TREND CHART === */
+.chart-container {
+  position: relative;
+  min-height: 160px;
+}
+
+.trend-chart {
+  display: block;
+  width: 100%;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 0 20px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chart-legend-item {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  color: var(--cat-color, var(--text-secondary));
+  border: 1px solid var(--cat-color, rgba(255,255,255,0.1));
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.chart-legend-item.active {
+  opacity: 1;
+}
+
+/* === STREAK CALENDAR === */
+.calendar-container {
+  overflow-x: auto;
+}
+
+.streak-calendar {
+  display: block;
+}
+
+/* === HISTORY LIST (in performance log tab) === */
+.history-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.history-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+/* === HOME: FOCUS CARD === */
+.focus-card {
+  padding: 14px 16px;
+}
+
+.focus-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.focus-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.focus-card-info {
+  flex: 1;
+}
+
+.focus-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.focus-card-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.focus-progress-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.focus-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.focus-progress-label {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+/* === INLINE EMPTY STATE === */
+.empty-state-inline {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 12px 0;
+}

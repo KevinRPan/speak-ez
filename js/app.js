@@ -9,6 +9,7 @@ import { renderWorkouts, renderWorkoutDetail } from './screens/workouts.js';
 import { renderActiveWorkout, cleanupActiveWorkout } from './screens/active-workout.js';
 import { renderWorkoutComplete } from './screens/workout-complete.js';
 import { renderHistory } from './screens/history.js';
+import { renderPerformance } from './screens/performance.js';
 import { renderExercises } from './screens/exercises.js';
 import { renderProfile } from './screens/profile.js';
 import { renderScenarios } from './screens/scenarios.js';
@@ -34,6 +35,7 @@ function init() {
       'active-workout': renderActiveWorkout,
       'workout-complete': renderWorkoutComplete,
       'history': renderHistory,
+      'performance': renderPerformance,
       'exercises': renderExercises,
       'profile': renderProfile,
       'scenarios': renderScenarios,
@@ -58,12 +60,12 @@ function init() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
       const tab = item.dataset.tab;
-      const tabMap = { 
-        home: 'home', 
-        history: 'history', 
-        scenarios: 'scenarios', 
+      const tabMap = {
+        home: 'home',
+        performance: 'performance',
+        scenarios: 'scenarios',
         'interview-setup': 'interview-setup',
-        profile: 'profile' 
+        profile: 'profile',
       };
       if (tabMap[tab]) navigateTo(tabMap[tab]);
     });
