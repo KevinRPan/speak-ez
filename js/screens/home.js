@@ -7,6 +7,8 @@ import { getUser, getHistory } from '../utils/storage.js';
 import { getLevelInfo, getWeeklyCount, checkStreak } from '../utils/xp.js';
 import { workoutTemplates } from '../data/workouts.js';
 import { navigateTo } from '../lib/router.js';
+import { getActiveCourse } from '../utils/curriculum-progress.js';
+import { getRecommendation } from '../utils/recommendations.js';
 
 export function renderHome(container) {
   const user = getUser();
@@ -14,6 +16,8 @@ export function renderHome(container) {
   const level = getLevelInfo(user.xp);
   const weeklyCount = getWeeklyCount(history);
   const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
+  const activeCourse = getActiveCourse(history);
+  const recommendation = getRecommendation(history);
 
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const now = new Date();
@@ -82,6 +86,40 @@ export function renderHome(container) {
         </button>
       </div>
 
+      ${activeCourse ? `
+        <div class="section">
+          <div class="section-header">
+            <span class="label">Your Focus</span>
+          </div>
+          <div class="card card-interactive focus-card" id="focus-card">
+            <div class="focus-card-top">
+              <div class="focus-card-icon" style="background: ${activeCourse.unit.color}20; color: ${activeCourse.unit.color};">
+                ${activeCourse.unit.icon}
+              </div>
+              <div class="focus-card-info">
+                <div class="focus-card-name">${activeCourse.unit.name}</div>
+                <div class="focus-card-desc">${activeCourse.unit.description}</div>
+              </div>
+            </div>
+            <div class="focus-progress-bar">
+              <div class="focus-progress-fill" style="width: ${Math.round(activeCourse.progress * 100)}%; background: ${activeCourse.unit.color};"></div>
+            </div>
+            <div class="focus-progress-label">
+              ${Math.round(activeCourse.progress * 100)}% to graduation · ${activeCourse.unit.graduationLabel}
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${recommendation?.quickWin ? `
+        <div class="section">
+          <div class="insight-card" style="cursor: default;">
+            <div class="insight-icon">💡</div>
+            <div class="insight-text">${recommendation.quickWin}</div>
+          </div>
+        </div>
+      ` : ''}
+
       <div class="section">
         <div class="section-header">
           <span class="label">Quick pick by time</span>
@@ -124,6 +162,13 @@ export function renderHome(container) {
   document.getElementById('start-training-btn').addEventListener('click', () => {
     navigateTo('workouts');
   });
+
+  const focusCardEl = document.getElementById('focus-card');
+  if (focusCardEl) {
+    focusCardEl.addEventListener('click', () => {
+      navigateTo('workouts');
+    });
+  }
 
   container.querySelectorAll('.time-chip[data-minutes]').forEach(chip => {
     chip.addEventListener('click', () => {
