@@ -21,6 +21,11 @@ let recordingBlobUrl = null;
 let recordingBlob = null;
 let recordingEnabled = false;
 
+// Speech recognition state (for tongue twisters)
+let recognition = null;
+let liveTranscript = '';
+let finalTranscript = '';
+
 // AI review state
 let feedbackResult = null; // null | 'loading' | { feedback object } | { error: string }
 
@@ -211,6 +216,13 @@ function renderActive() {
         </div>
       ` : ''}
 
+      ${isTongueTwister(set) ? `
+        <div class="live-transcript-card">
+          <div class="live-transcript-label">What we heard:</div>
+          <div class="live-transcript-text" id="live-transcript">Listening...</div>
+        </div>
+      ` : ''}
+
       <div class="timer-display running" id="timer">${formatTime(state.timeLeft)}</div>
 
       <div class="workout-controls">
@@ -231,6 +243,11 @@ function renderActive() {
     }
   }
 
+  // Start speech recognition for tongue twisters
+  if (isTongueTwister(set)) {
+    startSpeechRecognition();
+  }
+
   startTimer();
 }
 
@@ -242,6 +259,8 @@ function renderRating() {
     <div class="screen">
       <div class="rating-section">
         <div class="exercise-display-name mb-16">${set.exercise.name}</div>
+
+        ${isTongueTwister(set) ? renderTongueTwisterResult(set) : ''}
 
         ${hasRecording ? `
           <div class="playback-section">
@@ -273,6 +292,37 @@ function renderRating() {
   `;
 
   container.onclick = handleRatingClick;
+}
+
+// === Tongue Twister Result ===
+
+function renderTongueTwisterResult(set) {
+  const transcript = set.spokenTranscript;
+  if (!transcript) {
+    return `
+      <div class="twister-result-card">
+        <div class="twister-result-status mismatch">
+          <span class="twister-status-icon">🎤</span>
+          <span>No speech detected — try again next set!</span>
+        </div>
+      </div>
+    `;
+  }
+
+  const isMatch = checkTranscriptMatch(transcript, set.prompt);
+
+  return `
+    <div class="twister-result-card">
+      <div class="twister-result-status ${isMatch ? 'match' : 'mismatch'}">
+        <span class="twister-status-icon">${isMatch ? '✅' : '❌'}</span>
+        <span>${isMatch ? 'Nailed it!' : 'Not quite — keep practicing!'}</span>
+      </div>
+      <div class="twister-prompt-label">Prompt</div>
+      <div class="twister-prompt-text">${escapeHtml(set.prompt)}</div>
+      <div class="twister-transcript-label">You said</div>
+      <div class="twister-transcript-text">${escapeHtml(transcript)}</div>
+    </div>
+  `;
 }
 
 // === AI Review ===
@@ -688,6 +738,9 @@ function stopAndCleanupRecording() {
     URL.revokeObjectURL(recordingBlobUrl);
     recordingBlobUrl = null;
   }
+  stopSpeechRecognition();
+  liveTranscript = '';
+  finalTranscript = '';
 }
 
 function getSupportedMimeType() {
@@ -701,6 +754,74 @@ function getSupportedMimeType() {
     if (MediaRecorder.isTypeSupported(type)) return type;
   }
   return '';
+}
+
+// === Speech Recognition (Tongue Twisters) ===
+
+function isTongueTwister(set) {
+  return set.exerciseId === 'tongue-twisters';
+}
+
+function startSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+
+  liveTranscript = '';
+  finalTranscript = '';
+
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript + ' ';
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+    liveTranscript = finalTranscript + interim;
+    const el = document.getElementById('live-transcript');
+    if (el) el.textContent = liveTranscript || 'Listening...';
+  };
+
+  recognition.onerror = (event) => {
+    if (event.error === 'no-speech') return;
+    console.warn('Speech recognition error:', event.error);
+  };
+
+  recognition.onend = () => {
+    // Auto-restart if still in active phase
+    if (state?.phase === 'active' && recognition) {
+      try { recognition.start(); } catch (e) {}
+    }
+  };
+
+  recognition.start();
+}
+
+function stopSpeechRecognition() {
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+    recognition = null;
+  }
+}
+
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function checkTranscriptMatch(transcript, prompt) {
+  const normTranscript = normalizeText(transcript);
+  const normPrompt = normalizeText(prompt);
+  return normTranscript.includes(normPrompt) || normPrompt.includes(normTranscript);
 }
 
 // === Timer Logic ===
@@ -739,13 +860,20 @@ function startRestTimer() {
 }
 
 async function completeSet() {
-  state.sets[state.currentIndex].completed = true;
+  const set = state.sets[state.currentIndex];
+  set.completed = true;
+
+  // Stop speech recognition and save transcript for tongue twisters
+  if (isTongueTwister(set) && recognition) {
+    stopSpeechRecognition();
+    set.spokenTranscript = (liveTranscript || finalTranscript).trim();
+  }
 
   // Stop recording and save the blob URL to this set
   if (recordingEnabled && mediaRecorder) {
     const url = await stopRecording();
     if (url) {
-      state.sets[state.currentIndex].recordingUrl = url;
+      set.recordingUrl = url;
     }
   }
 
