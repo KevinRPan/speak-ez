@@ -33,6 +33,7 @@ export function renderInterviewDrill(cont, data = {}) {
     level: data.level || null,
     round: data.round || null,
     question: data.question || null,
+    askedQuestions: [], // track asked questions to avoid repeats
     response: '',
     mode: 'ready', // ready | choose-input | recording | typing
     recordingType: 'audio', // audio | video
@@ -246,8 +247,9 @@ function renderRoundSelect() {
 // ── Session ──
 
 function startSession() {
-  const q = getRandomQuestion(state.field, state.round, state.level);
+  const q = getRandomQuestion(state.field, state.round, state.level, state.askedQuestions);
   state.question = q;
+  if (q) state.askedQuestions.push(q);
   state.response = '';
   state.mode = 'ready';
   state.recordingType = 'audio';
@@ -474,8 +476,9 @@ function renderSession() {
         render();
       }
     } else if (type === 'skip') {
-      const q = getRandomQuestion(state.field, state.round, state.level);
+      const q = getRandomQuestion(state.field, state.round, state.level, state.askedQuestions);
       state.question = q;
+      if (q) state.askedQuestions.push(q);
       state.response = '';
       render();
     }
