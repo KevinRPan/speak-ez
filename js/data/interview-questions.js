@@ -214,10 +214,18 @@ export function getQuestions(fieldKey, roundKey, level) {
 }
 
 /**
- * Get a random question from a specific configuration.
+ * Get a random question from a specific configuration,
+ * avoiding questions in the `exclude` array (matched by `.q` text).
  */
-export function getRandomQuestion(fieldKey, roundKey, level) {
+export function getRandomQuestion(fieldKey, roundKey, level, exclude = []) {
   const questions = getQuestions(fieldKey, roundKey, level);
   if (!questions.length) return null;
-  return questions[Math.floor(Math.random() * questions.length)];
+
+  // Filter out already-asked questions
+  const excludeSet = new Set(exclude.map(e => (typeof e === 'string' ? e : e.q)));
+  const available = questions.filter(q => !excludeSet.has(q.q));
+
+  // If all questions exhausted, reset and allow any
+  const pool = available.length > 0 ? available : questions;
+  return pool[Math.floor(Math.random() * pool.length)];
 }

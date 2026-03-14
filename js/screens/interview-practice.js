@@ -468,6 +468,9 @@ async function submitAnswer() {
     liveTranscript = '';
     finalTranscript = '';
 
+    // round sent to the API (1-indexed: opening=1, first follow-up=2, etc.)
+    const apiRound = state.qaRound + 2;
+
     const response = await fetch('/api/interview-qa', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -482,7 +485,7 @@ async function submitAnswer() {
           role: m.role === 'ai' ? 'assistant' : 'user',
           text: m.text,
         })),
-        round: state.qaRound + 2, // 0-based round means this is technically round 2 if qaRound was 0.
+        round: apiRound,
         totalRounds: state.qaTotal,
       }),
     });
@@ -494,7 +497,10 @@ async function submitAnswer() {
     state.qaRound++;
     state.qaLoading = false;
 
-    if (data.isComplete || state.qaRound >= state.qaTotal) {
+    // Complete if: API says so, client round count reached, OR API was told this was the last round
+    const shouldComplete = data.isComplete || state.qaRound >= state.qaTotal || apiRound >= state.qaTotal;
+
+    if (shouldComplete) {
       if (data.question) {
         state.qaMessages.push({ role: 'ai', text: data.question });
       }
