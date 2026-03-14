@@ -115,8 +115,8 @@ function renderQA() {
         <div class="qa-chat-messages" id="interview-messages" style="flex: 1; overflow-y: auto;">
           ${qaMessages.map(msg => `
             <div class="qa-message qa-message-${msg.role}">
-              <div class="qa-message-avatar">${msg.role === 'ai' ? '🤖' : '🎤'}</div>
-              <div class="qa-message-bubble">${escapeHtml(msg.text)}</div>
+              <div class="qa-message-avatar">${msg.role === 'coaching' ? '💡' : msg.role === 'ai' ? '🤖' : '🎤'}</div>
+              <div class="qa-message-bubble${msg.role === 'coaching' ? ' qa-coaching-bubble' : ''}">${escapeHtml(msg.text)}</div>
             </div>
           `).join('')}
 
@@ -499,6 +499,11 @@ async function submitAnswer() {
 
     // Complete if: API says so, client round count reached, OR API was told this was the last round
     const shouldComplete = data.isComplete || state.qaRound >= state.qaTotal || apiRound >= state.qaTotal;
+
+    // Show per-answer coaching if available
+    if (data.feedbackOnPrevious) {
+      state.qaMessages.push({ role: 'coaching', text: data.feedbackOnPrevious });
+    }
 
     if (shouldComplete) {
       if (data.question) {

@@ -2506,6 +2506,14 @@ a {
   border-bottom-right-radius: 4px;
 }
 
+.qa-coaching-bubble {
+  background: rgba(0, 180, 216, 0.08);
+  border-color: rgba(0, 180, 216, 0.2);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  border-left: 3px solid var(--blue, #00b4d8);
+}
+
 /* === Q&A TYPING INDICATOR === */
 .qa-typing {
   display: flex;
