@@ -33,7 +33,7 @@ Dynamic follow-up requirement:
 Return your response as JSON with exactly this structure:
 {
   "question": "<your in-character follow-up question or response, typically 1 to 3 sentences>",
-  "feedbackOnPrevious": "<brief internal note on how the candidate did, 1 sentence>",
+  "feedbackOnPrevious": "<2-3 sentence coaching feedback on the candidate's PREVIOUS answer. Be specific: reference what they said, what was strong, and give one concrete tip to improve. This is shown directly to the user as coaching.>",
   "isComplete": {{IS_COMPLETE}}{{SUMMARY_FIELD}}
 }
 
