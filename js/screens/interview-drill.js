@@ -20,6 +20,9 @@ let finalTranscript = '';
 let timerInterval = null;
 let elapsedSeconds = 0;
 
+// Feedback session tracking (guards against stale responses)
+let feedbackSessionId = 0;
+
 export function renderInterviewDrill(cont, data = {}) {
   container = cont;
   cleanup();
@@ -239,6 +242,7 @@ function renderRoundSelect() {
 // ── Session ──
 
 function startSession() {
+  feedbackSessionId++;
   const q = getRandomQuestion(state.field, state.round, state.level);
   state.question = q;
   state.response = '';
@@ -441,7 +445,7 @@ function startRecording() {
 
   recognition.onresult = (event) => {
     let interim = '';
-    for (let i = 0; i < event.results.length; i++) {
+    for (let i = event.resultIndex; i < event.results.length; i++) {
       if (event.results[i].isFinal) {
         finalTranscript += event.results[i][0].transcript + ' ';
       } else {
@@ -477,7 +481,7 @@ function stopRecognition() {
     try { recognition.stop(); } catch (e) {}
     recognition = null;
   }
-  state.isRecording = false;
+  if (state) state.isRecording = false;
   liveTranscript = '';
   finalTranscript = '';
 }
@@ -636,6 +640,7 @@ function renderFeedbackContent() {
 }
 
 async function fetchFeedback() {
+  const thisSession = feedbackSessionId;
   state.feedbackLoading = true;
   updateFeedbackArea();
 
@@ -654,13 +659,16 @@ async function fetchFeedback() {
       }),
     });
 
+    if (thisSession !== feedbackSessionId) return;
     if (!response.ok) throw new Error('Failed to get feedback');
 
     const data = await response.json();
+    if (thisSession !== feedbackSessionId) return;
     state.feedback = data.feedback || data;
     state.feedbackLoading = false;
     state.feedbackError = null;
   } catch (err) {
+    if (thisSession !== feedbackSessionId) return;
     console.error('Drill feedback error:', err);
     state.feedbackLoading = false;
     state.feedbackError = 'Could not generate feedback. Please try again.';
