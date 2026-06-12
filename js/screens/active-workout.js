@@ -35,9 +35,16 @@ function getInterviewContext() {
   return { position: settings.interviewPosition, level: settings.interviewLevel };
 }
 
+function pickTrackPrompt(trackContext) {
+  const prompts = trackContext?.prompts;
+  if (!prompts?.length) return null;
+  return prompts[Math.floor(Math.random() * prompts.length)];
+}
+
 export function renderActiveWorkout(cont, data = {}) {
   container = cont;
-  const workout = getWorkout(data.workoutId);
+  // Track project reps pass an ad-hoc workout object; templates pass an id
+  const workout = data.workout || getWorkout(data.workoutId);
   if (!workout) {
     navigateTo('workouts');
     return;
@@ -61,7 +68,7 @@ export function renderActiveWorkout(cont, data = {}) {
         totalSets: ex.sets,
         duration: ex.duration,
         rest: ex.rest,
-        prompt: getRandomPrompt(ex.exerciseId, getInterviewContext()),
+        prompt: pickTrackPrompt(data.trackContext) || getRandomPrompt(ex.exerciseId, getInterviewContext()),
         rating: null,
         completed: false,
         recordingUrl: null,
@@ -77,6 +84,7 @@ export function renderActiveWorkout(cont, data = {}) {
     timeLeft: 0,
     startedAt: Date.now(),
     ratings: [],
+    trackContext: data.trackContext || null,
   };
 
   // Reset recording state for new workout
@@ -645,6 +653,13 @@ function finishWorkout() {
     sessionReaction,
   };
 
+  if (state.trackContext) {
+    session.track = {
+      trackId: state.trackContext.trackId,
+      projectId: state.trackContext.projectId,
+    };
+  }
+
   // Revoke any remaining blob URLs
   state.sets.forEach(set => {
     if (set.recordingUrl) {
@@ -919,7 +934,7 @@ async function handleReadyClick(e) {
     advanceToNext();
   } else if (type === 'new-prompt') {
     const set = state.sets[state.currentIndex];
-    set.prompt = getRandomPrompt(set.exerciseId, getInterviewContext()) || set.prompt;
+    set.prompt = pickTrackPrompt(state.trackContext) || getRandomPrompt(set.exerciseId, getInterviewContext()) || set.prompt;
     renderCurrentState();
   } else if (type === 'toggle-recording') {
     recordingEnabled = !recordingEnabled;

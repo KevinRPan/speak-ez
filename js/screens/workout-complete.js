@@ -6,6 +6,8 @@ import { addSession, getUser, update, loadAll, saveAll, getHistory } from '../ut
 import { calculateSessionXp, checkStreak, getLevelInfo } from '../utils/xp.js';
 import { navigateTo } from '../lib/router.js';
 import { generateSessionReaction } from '../utils/session-feedback.js';
+import { getTrackProject, buildProjectWorkout } from '../data/tracks.js';
+import { recordRep, updateRep, getProjectProgress, getMonitorAreas } from '../utils/track-progress.js';
 
 export function renderWorkoutComplete(container, data = {}) {
   const session = data.session;
@@ -35,6 +37,29 @@ export function renderWorkoutComplete(container, data = {}) {
   // Save session to history
   addSession(session);
 
+  // Track project rep: log it and prep the self-evaluation card
+  let trackInfo = null;
+  if (session.track) {
+    const found = getTrackProject(session.track.trackId, session.track.projectId);
+    if (found) {
+      const avgSelfRating = getAvgRating(session);
+      const rep = recordRep(found.track.id, found.project.id, {
+        sessionId: session.id,
+        rating: avgSelfRating ? Math.round(avgSelfRating * 10) / 10 : null,
+        aiScores: session.avgAiScores,
+        fillerCount: session.totalFillerCount,
+      });
+      const progress = getProjectProgress(found.project.id);
+      trackInfo = {
+        ...found,
+        rep,
+        repsDone: progress.reps.length,
+        // Monitor areas should reflect reps before this one — its checklist is still empty
+        prevProgress: { reps: progress.reps.slice(0, -1) },
+      };
+    }
+  }
+
   const levelBefore = getLevelInfo(user.xp);
   const levelAfter = getLevelInfo(store.user.xp);
   const leveledUp = levelAfter.level > levelBefore.level;
@@ -60,6 +85,8 @@ export function renderWorkoutComplete(container, data = {}) {
           <div class="reaction-headline">${reaction.headline}</div>
           ${reaction.callout ? `<div class="reaction-callout">${reaction.callout}</div>` : ''}
         </div>
+
+        ${trackInfo ? renderTrackEval(trackInfo) : ''}
 
         ${session.avgAiScores ? `
           <div class="card mb-16">
@@ -166,10 +193,12 @@ export function renderWorkoutComplete(container, data = {}) {
         ` : ''}
 
         <button class="btn btn-primary btn-lg btn-block mb-16" id="complete-done-btn">
-          Done
+          ${trackInfo ? 'Back to Project' : 'Done'}
         </button>
         <button class="btn btn-secondary btn-block" id="complete-repeat-btn">
-          Repeat Workout
+          ${trackInfo
+            ? (trackInfo.repsDone < trackInfo.project.repsRequired ? `Next Rep (${trackInfo.repsDone + 1} of ${trackInfo.project.repsRequired})` : 'Practice Again')
+            : 'Repeat Workout'}
         </button>
       </div>
     </div>
@@ -177,13 +206,96 @@ export function renderWorkoutComplete(container, data = {}) {
 
   showConfetti();
 
+  if (trackInfo) {
+    bindTrackEval(container, trackInfo);
+  }
+
   document.getElementById('complete-done-btn').addEventListener('click', () => {
-    navigateTo('home');
+    if (trackInfo) {
+      navigateTo('track-project', { trackId: trackInfo.track.id, projectId: trackInfo.project.id });
+    } else {
+      navigateTo('home');
+    }
   });
 
   document.getElementById('complete-repeat-btn').addEventListener('click', () => {
-    navigateTo('active-workout', { workoutId: session.workoutId });
+    if (trackInfo) {
+      navigateTo('active-workout', {
+        workout: buildProjectWorkout(trackInfo.track, trackInfo.project),
+        trackContext: {
+          trackId: trackInfo.track.id,
+          projectId: trackInfo.project.id,
+          prompts: trackInfo.project.prompts || null,
+        },
+      });
+    } else {
+      navigateTo('active-workout', { workoutId: session.workoutId });
+    }
   });
+}
+
+/**
+ * Toastmasters-style self-evaluation card for a track project rep.
+ * Checkbox/notes changes are saved onto the logged rep immediately.
+ */
+function renderTrackEval({ track, project, repsDone, prevProgress }) {
+  const projectDone = repsDone >= project.repsRequired;
+  const monitor = getMonitorAreas(project, prevProgress);
+
+  return `
+    <div class="card mb-16 track-eval-card" style="border-left: 3px solid ${track.color}; text-align: left;">
+      <div class="track-eval-header">
+        <span class="track-eval-icon">${project.icon}</span>
+        <div>
+          <div class="track-eval-title">${project.name}</div>
+          <div class="track-eval-sub">
+            ${projectDone ? `Project complete — ${repsDone} reps logged 🎉` : `Rep ${repsDone} of ${project.repsRequired} logged`}
+          </div>
+        </div>
+      </div>
+
+      <div class="label mb-8 mt-16">Self-evaluation — what did you nail?</div>
+      <div class="track-eval-checklist">
+        ${project.checklist.map((item, idx) => `
+          <label class="track-eval-item">
+            <input type="checkbox" data-check-index="${idx}">
+            <span>${item}</span>
+          </label>
+        `).join('')}
+      </div>
+
+      ${monitor.weakSpots.length || monitor.watchFor.length ? `
+        <div class="label mb-8 mt-16" style="color: var(--warning);">Areas to monitor</div>
+        <ul class="monitor-list">
+          ${[...monitor.weakSpots, ...monitor.watchFor].map(item => `<li>${item}</li>`).join('')}
+        </ul>
+      ` : ''}
+
+      <div class="label mb-8 mt-16">Notes for next rep</div>
+      <textarea class="track-eval-notes" id="track-eval-notes" rows="2"
+        placeholder="e.g. slow down the opening, hold the last pause longer"></textarea>
+    </div>
+  `;
+}
+
+function bindTrackEval(container, trackInfo) {
+  const { project, rep } = trackInfo;
+  if (!rep) return;
+
+  container.querySelectorAll('[data-check-index]').forEach(box => {
+    box.addEventListener('change', () => {
+      const checked = [...container.querySelectorAll('[data-check-index]:checked')]
+        .map(el => parseInt(el.dataset.checkIndex));
+      updateRep(project.id, rep.id, { checked });
+    });
+  });
+
+  const notesEl = container.querySelector('#track-eval-notes');
+  if (notesEl) {
+    notesEl.addEventListener('change', () => {
+      updateRep(project.id, rep.id, { notes: notesEl.value.trim() });
+    });
+  }
 }
 
 function getAvgRating(session) {

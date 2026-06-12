@@ -9,6 +9,7 @@ import { workoutTemplates } from '../data/workouts.js';
 import { navigateTo } from '../lib/router.js';
 import { getActiveCourse } from '../utils/curriculum-progress.js';
 import { getRecommendation } from '../utils/recommendations.js';
+import { getContinueTarget } from '../utils/track-progress.js';
 
 export function renderHome(container) {
   const user = getUser();
@@ -18,6 +19,7 @@ export function renderHome(container) {
   const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
   const activeCourse = getActiveCourse(history);
   const recommendation = getRecommendation(history);
+  const trackTarget = getContinueTarget();
 
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const now = new Date();
@@ -122,6 +124,32 @@ export function renderHome(container) {
 
       <div class="section">
         <div class="section-header">
+          <span class="label">Learning track</span>
+        </div>
+        ${trackTarget ? `
+          <div class="card card-interactive track-continue-card" id="track-continue-card"
+            style="border-left: 3px solid ${trackTarget.track.color};">
+            <div class="track-continue-icon">${trackTarget.project.icon}</div>
+            <div class="track-continue-info">
+              <div class="track-continue-name">${trackTarget.project.name}</div>
+              <div class="track-continue-meta">${trackTarget.track.name} · Level ${trackTarget.levelIndex + 1}</div>
+            </div>
+            <div class="workout-card-arrow">›</div>
+          </div>
+        ` : `
+          <div class="card card-interactive track-continue-card" id="track-continue-card">
+            <div class="track-continue-icon">🎓</div>
+            <div class="track-continue-info">
+              <div class="track-continue-name">Start a Learning Track</div>
+              <div class="track-continue-meta">Toastmasters-style projects with reps & evaluations</div>
+            </div>
+            <div class="workout-card-arrow">›</div>
+          </div>
+        `}
+      </div>
+
+      <div class="section">
+        <div class="section-header">
           <span class="label">Quick pick by time</span>
         </div>
         <div class="time-picker">
@@ -162,6 +190,17 @@ export function renderHome(container) {
   document.getElementById('start-training-btn').addEventListener('click', () => {
     navigateTo('workouts');
   });
+
+  const trackCardEl = document.getElementById('track-continue-card');
+  if (trackCardEl) {
+    trackCardEl.addEventListener('click', () => {
+      if (trackTarget) {
+        navigateTo('track-project', { trackId: trackTarget.track.id, projectId: trackTarget.project.id });
+      } else {
+        navigateTo('tracks');
+      }
+    });
+  }
 
   const focusCardEl = document.getElementById('focus-card');
   if (focusCardEl) {

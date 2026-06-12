@@ -18,6 +18,7 @@ export const defaults = {
   history: [],
   personalRecords: {},
   customWorkouts: [],
+  trackProgress: {},
   settings: {
     restDuration: 30,
     soundEnabled: true,

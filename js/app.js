@@ -12,6 +12,9 @@ import { renderHistory } from './screens/history.js';
 import { renderPerformance } from './screens/performance.js';
 import { renderExercises } from './screens/exercises.js';
 import { renderProfile } from './screens/profile.js';
+import { renderTracks } from './screens/tracks.js';
+import { renderTrackDetail } from './screens/track-detail.js';
+import { renderTrackProject } from './screens/track-project.js';
 import { renderScenarios } from './screens/scenarios.js';
 import { renderScenarioDetail } from './screens/scenario-detail.js';
 import { renderScenarioPractice, cleanupScenarioPractice } from './screens/scenario-practice.js';
@@ -38,6 +41,9 @@ function init() {
       'performance': renderPerformance,
       'exercises': renderExercises,
       'profile': renderProfile,
+      'tracks': renderTracks,
+      'track-detail': renderTrackDetail,
+      'track-project': renderTrackProject,
       'scenarios': renderScenarios,
       'scenario-detail': renderScenarioDetail,
       'scenario-practice': renderScenarioPractice,
@@ -62,6 +68,7 @@ function init() {
       const tab = item.dataset.tab;
       const tabMap = {
         home: 'home',
+        tracks: 'tracks',
         performance: 'performance',
         scenarios: 'scenarios',
         'interview-setup': 'interview-setup',
