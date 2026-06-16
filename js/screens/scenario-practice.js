@@ -378,16 +378,16 @@ function renderComplete() {
         ` : `
           <div class="card">
             <p class="text-secondary">Feedback couldn't be loaded, but great job practicing!</p>
-            ${recordingBlob ? `
-              <button class="btn btn-secondary btn-block mt-8" data-action="save-recording">
-                ⬇ Save Your Recording
-              </button>
-            ` : ''}
           </div>
         `}
 
         <div class="scenario-complete-actions">
-          <button class="btn btn-primary btn-block" data-action="done">
+          ${recordingBlob ? `
+            <button class="btn btn-secondary btn-block" data-action="save-recording">
+              ⬇ Save Recording
+            </button>
+          ` : ''}
+          <button class="btn btn-primary btn-block mt-8" data-action="done">
             Back to Scenarios
           </button>
           <button class="btn btn-ghost btn-block mt-8" data-action="retry">
