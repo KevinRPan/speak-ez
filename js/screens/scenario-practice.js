@@ -173,6 +173,9 @@ function renderReview() {
         <button class="btn btn-primary btn-block" data-action="continue-qa">
           Continue to Q&A →
         </button>
+        <button class="btn btn-secondary btn-block mt-8" data-action="save-recording">
+          ⬇ Save Recording
+        </button>
         <button class="btn btn-ghost btn-block mt-8" data-action="re-record">
           ↻ Re-record
         </button>
@@ -190,6 +193,8 @@ function renderReview() {
         stopAndCleanupRecording();
         navigateTo('scenarios');
       }
+    } else if (type === 'save-recording') {
+      downloadRecording();
     } else if (type === 'continue-qa') {
       state.phase = 'qa';
       state.qaLoading = true;
@@ -377,7 +382,12 @@ function renderComplete() {
         `}
 
         <div class="scenario-complete-actions">
-          <button class="btn btn-primary btn-block" data-action="done">
+          ${recordingBlob ? `
+            <button class="btn btn-secondary btn-block" data-action="save-recording">
+              ⬇ Save Recording
+            </button>
+          ` : ''}
+          <button class="btn btn-primary btn-block mt-8" data-action="done">
             Back to Scenarios
           </button>
           <button class="btn btn-ghost btn-block mt-8" data-action="retry">
@@ -391,7 +401,9 @@ function renderComplete() {
   container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (!action) return;
-    if (action.dataset.action === 'done') {
+    if (action.dataset.action === 'save-recording') {
+      downloadRecording();
+    } else if (action.dataset.action === 'done') {
       cleanup();
       navigateTo('scenarios');
     } else if (action.dataset.action === 'retry') {
@@ -625,6 +637,33 @@ async function submitQaResponse() {
 }
 
 // === HELPERS ===
+
+function downloadRecording() {
+  if (!recordingBlob) {
+    alert('No recording is available to save.');
+    return;
+  }
+
+  const url = recordingBlobUrl || URL.createObjectURL(recordingBlob);
+  const ext = mimeToExtension(recordingBlob.type);
+  const slug = (state?.scenario?.id || 'practice').toString().replace(/[^a-z0-9]+/gi, '-');
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `speak-ez-${slug}-${stamp}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function mimeToExtension(mimeType = '') {
+  const type = mimeType.toLowerCase();
+  if (type.includes('mp4')) return 'mp4';
+  if (type.includes('webm')) return 'webm';
+  if (type.includes('ogg')) return 'ogg';
+  return 'webm';
+}
 
 function stopMediaTracks() {
   if (mediaStream) {
