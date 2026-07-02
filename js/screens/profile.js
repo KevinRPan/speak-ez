@@ -3,7 +3,7 @@
  */
 
 import { getUser, getHistory, getSettings, update, loadAll, saveAll, clearAll, pullAndMerge } from '../utils/storage.js';
-import { getLevelInfo, LEVELS, getWeeklyCount } from '../utils/xp.js';
+import { getLevelInfo, LEVELS, getWeeklyCount, getDisplayStreak } from '../utils/xp.js';
 import { getAuthUser, sendMagicLink, logout as authLogout, isSessionChecked, onAuthChange } from '../utils/auth.js';
 
 function renderAccountCard() {
@@ -87,7 +87,7 @@ export function renderProfile(container) {
             <div class="profile-stat-label">Minutes</div>
           </div>
           <div class="profile-stat">
-            <div class="profile-stat-value">${user.streak}</div>
+            <div class="profile-stat-value">${getDisplayStreak(user.lastPracticeDate, user.streak)}</div>
             <div class="profile-stat-label">Day Streak</div>
           </div>
         </div>

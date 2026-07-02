@@ -7,6 +7,7 @@
 
 import { navigateTo } from '../lib/router.js';
 import { FIELDS, getQuestions, getRandomQuestion } from '../data/interview-questions.js';
+import { recordPracticeSession, normalizeCriterionScores } from '../utils/practice-log.js';
 
 let state = null;
 let container = null;
@@ -44,6 +45,7 @@ export function renderInterviewDrill(cont, data = {}) {
     feedbackError: null,
     lastFeedbackMethod: 'drill',
     lastUpload: null,
+    sessionRecorded: false,
   };
 
   render();
@@ -257,6 +259,7 @@ function startSession() {
   state.feedbackError = null;
   state.lastFeedbackMethod = 'drill';
   state.lastUpload = null;
+  state.sessionRecorded = false;
   state.phase = 'session';
   elapsedSeconds = 0;
 
@@ -745,6 +748,7 @@ async function fetchFeedback() {
     state.feedback = data.feedback || data;
     state.feedbackLoading = false;
     state.feedbackError = null;
+    recordDrillRep();
   } catch (err) {
     console.error('Drill feedback error:', err);
     state.feedbackLoading = false;
@@ -752,6 +756,31 @@ async function fetchFeedback() {
   }
 
   updateFeedbackArea();
+}
+
+/**
+ * Log the answered question so it counts toward XP, streak, and history.
+ * Called once per question when feedback arrives.
+ */
+function recordDrillRep() {
+  if (!state || state.sessionRecorded) return;
+  state.sessionRecorded = true;
+
+  const roundData = FIELDS[state.field]?.rounds?.[state.round];
+  const fb = state.feedback;
+  recordPracticeSession({
+    type: 'interview-drill',
+    name: `Drill: ${roundData?.label || 'Interview question'} (${state.level || ''} ${FIELDS[state.field]?.label || ''})`.trim(),
+    icon: roundData?.icon || '🎯',
+    color: 'var(--blue)',
+    durationSeconds: elapsedSeconds,
+    roundsCompleted: 1,
+    roundsTotal: 1,
+    rating: Number.isFinite(fb?.overall_score)
+      ? Math.min(5, Math.max(1, Math.round(fb.overall_score / 2)))
+      : null,
+    aiScores: normalizeCriterionScores(fb?.scores),
+  });
 }
 
 async function handleUploadedRecording(file) {
@@ -806,6 +835,7 @@ async function fetchUploadedFeedback(media, mimeType) {
     state.feedback = mapVideoFeedbackToDrillFeedback(data.feedback);
     state.feedbackLoading = false;
     state.feedbackError = null;
+    recordDrillRep();
   } catch (err) {
     console.error('Uploaded drill feedback error:', err);
     state.feedbackLoading = false;

@@ -8,6 +8,7 @@
 import { loadLocal, saveLocal, clearLocal, invalidateCache } from './storage-local.js';
 import { pushToServer, pullFromServer } from './storage-remote.js';
 import { isAuthenticated } from './auth.js';
+import { calculateSessionXp, checkStreak } from './xp.js';
 
 const SYNC_KEY = 'speakez_last_sync';
 let _syncTimer = null;
@@ -49,6 +50,16 @@ export function addInterviewUploadSession(payload) {
   const overallScore = Number(payload?.feedback?.overallScore || 0);
   const threadId = payload?.threadId || crypto.randomUUID();
   const turnIndex = Number(payload?.turnIndex || 1);
+  const streakInfo = checkStreak(data.user.lastPracticeDate, data.user.streak);
+
+  // Map feedback scores (1-10) onto the avgAiScores keys the charts read
+  const fbScores = payload?.feedback?.scores || {};
+  const avgAiScores = {};
+  [['language', 'clarity'], ['tonality', 'confidence'], ['pace', 'pace'], ['structure', 'structure']]
+    .forEach(([src, dst]) => {
+      const v = Number(fbScores[src]);
+      if (Number.isFinite(v) && v > 0) avgAiScores[dst] = v;
+    });
 
   const session = {
     id: crypto.randomUUID(),
@@ -62,7 +73,9 @@ export function addInterviewUploadSession(payload) {
     totalDuration: 0,
     setsCompleted: 1,
     totalSets: 1,
-    xpEarned: 0,
+    streakDay: streakInfo.streak,
+    avgAiScores: Object.keys(avgAiScores).length ? avgAiScores : null,
+    totalFillerCount: null,
     exercises: [{
       exerciseName: 'Uploaded interview response',
       setsCompleted: 1,
@@ -89,6 +102,11 @@ export function addInterviewUploadSession(payload) {
       feedback: payload?.feedback || {},
     },
   };
+
+  session.xpEarned = calculateSessionXp(session);
+  data.user.xp += session.xpEarned;
+  data.user.streak = streakInfo.streak;
+  data.user.lastPracticeDate = nowIso;
 
   data.history.unshift(session);
   saveAll(data);
@@ -131,7 +149,7 @@ export function clearAll() {
   clearLocal();
 }
 
-function formatInterviewType(interviewType) {
+export function formatInterviewType(interviewType) {
   const map = {
     'recruiter-screen': 'Recruiter Screen',
     'hiring-manager': 'Hiring Manager',

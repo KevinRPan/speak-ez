@@ -4,6 +4,8 @@
  */
 
 import { navigateTo } from '../lib/router.js';
+import { formatInterviewType } from '../utils/storage.js';
+import { recordPracticeSession, normalizeAiScores } from '../utils/practice-log.js';
 
 let state = null;
 let container = null;
@@ -46,6 +48,8 @@ export function renderInterviewPractice(cont, data = {}) {
     isRecording: false,
     recordingKind: getInitialRecordingKind(),
     videoSupported: supportsVideoCapture(),
+    answerSeconds: 0,
+    sessionRecorded: false,
   };
 
   if (state.recordingKind === 'video' && !state.videoSupported) {
@@ -235,6 +239,7 @@ function renderQA() {
     } else if (type === 'toggle-record') {
       if (state.isRecording) {
         await stopRecording();
+        state.answerSeconds += elapsedSeconds;
         state.isRecording = false;
         renderCurrentPhase();
       } else {
@@ -281,6 +286,25 @@ function renderComplete() {
 
   const fb = feedback || {};
   const hasScores = fb.scores && typeof fb.scores === 'object';
+
+  // Log the session so it counts toward XP, streak, and history
+  if (!state.sessionRecorded) {
+    state.sessionRecorded = true;
+    recordPracticeSession({
+      type: 'interview-practice',
+      name: `Mock Interview — ${formatInterviewType(state.interviewType)}`,
+      icon: '🎤',
+      color: 'var(--blue)',
+      durationSeconds: state.answerSeconds,
+      roundsCompleted: state.qaRound,
+      roundsTotal: state.qaTotal,
+      aiScores: normalizeAiScores(fb.scores, {
+        communication: 'clarity',
+        clarity: 'clarity',
+        confidence: 'confidence',
+      }, 5),
+    });
+  }
 
   container.innerHTML = `
     <div class="screen">
