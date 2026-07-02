@@ -348,8 +348,9 @@ function renderComplete() {
       icon: scenario.icon || '🎭',
       color: 'var(--purple)',
       durationSeconds: elapsedSeconds,
-      roundsCompleted: 1 + state.qaRound,
-      roundsTotal: 1 + state.qaTotal,
+      // qaRound already counts the initial recording (round 1)
+      roundsCompleted: state.qaRound,
+      roundsTotal: state.qaTotal,
       aiScores: normalizeAiScores(fb.scores, {
         clarity: 'clarity',
         confidence: 'confidence',
