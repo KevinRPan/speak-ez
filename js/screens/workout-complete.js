@@ -30,7 +30,7 @@ export function renderWorkoutComplete(container, data = {}) {
   // Update user stats
   const store = loadAll();
   store.user.xp += xpEarned;
-  store.user.streak = streakInfo.isNewDay ? streakInfo.streak : user.streak;
+  store.user.streak = streakInfo.streak;
   store.user.lastPracticeDate = new Date().toISOString();
   saveAll(store);
 

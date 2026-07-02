@@ -5,6 +5,7 @@
 
 import { getScenario } from '../data/scenarios.js';
 import { navigateTo } from '../lib/router.js';
+import { recordPracticeSession, normalizeAiScores } from '../utils/practice-log.js';
 
 // State
 let state = null;
@@ -44,6 +45,7 @@ export function renderScenarioPractice(cont, data = {}) {
     qaTotal: 3,
     qaLoading: false,
     feedback: null,
+    sessionRecorded: false,
   };
 
   elapsedSeconds = 0;
@@ -336,6 +338,24 @@ function renderComplete() {
   // Build feedback display
   const fb = feedback || {};
   const hasScores = fb.scores && typeof fb.scores === 'object';
+
+  // Log the session so it counts toward XP, streak, and history
+  if (!state.sessionRecorded) {
+    state.sessionRecorded = true;
+    recordPracticeSession({
+      type: 'scenario',
+      name: `Scenario: ${scenario.name}`,
+      icon: scenario.icon || '🎭',
+      color: 'var(--purple)',
+      durationSeconds: elapsedSeconds,
+      roundsCompleted: 1 + state.qaRound,
+      roundsTotal: 1 + state.qaTotal,
+      aiScores: normalizeAiScores(fb.scores, {
+        clarity: 'clarity',
+        confidence: 'confidence',
+      }, 5),
+    });
+  }
 
   container.innerHTML = `
     <div class="screen scenario-practice-screen">
