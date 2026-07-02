@@ -63,21 +63,36 @@ export function calculateSessionXp(session) {
  * Check and update streak based on last practice date
  */
 export function checkStreak(lastPracticeDate, currentStreak) {
-  if (!lastPracticeDate) return { streak: 0, isNewDay: true };
+  if (!lastPracticeDate) return { streak: 1, isNewDay: true };
 
-  const last = new Date(lastPracticeDate);
-  const now = new Date();
-  const lastDay = new Date(last.getFullYear(), last.getMonth(), last.getDate());
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diffDays = Math.floor((today - lastDay) / (1000 * 60 * 60 * 24));
+  const diffDays = daysSince(lastPracticeDate);
 
   if (diffDays === 0) {
-    return { streak: currentStreak, isNewDay: false };
+    // Max(1) heals users whose first-ever session was recorded as streak 0
+    return { streak: Math.max(currentStreak, 1), isNewDay: false };
   } else if (diffDays === 1) {
     return { streak: currentStreak + 1, isNewDay: true };
   } else {
     return { streak: 1, isNewDay: true };
   }
+}
+
+/**
+ * Streak to display right now: the stored streak while it's still alive
+ * (last practice today or yesterday), otherwise 0. Unlike checkStreak,
+ * this never previews the +1 for a day that hasn't been practiced yet.
+ */
+export function getDisplayStreak(lastPracticeDate, currentStreak) {
+  if (!lastPracticeDate) return 0;
+  return daysSince(lastPracticeDate) <= 1 ? currentStreak : 0;
+}
+
+function daysSince(dateStr) {
+  const last = new Date(dateStr);
+  const now = new Date();
+  const lastDay = new Date(last.getFullYear(), last.getMonth(), last.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.floor((today - lastDay) / (1000 * 60 * 60 * 24));
 }
 
 /**

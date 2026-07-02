@@ -4,7 +4,7 @@
  */
 
 import { getUser, getHistory } from '../utils/storage.js';
-import { getLevelInfo, getWeeklyCount, checkStreak } from '../utils/xp.js';
+import { getLevelInfo, getWeeklyCount, getDisplayStreak } from '../utils/xp.js';
 import { workoutTemplates } from '../data/workouts.js';
 import { navigateTo } from '../lib/router.js';
 import { getActiveCourse } from '../utils/curriculum-progress.js';
@@ -16,7 +16,7 @@ export function renderHome(container) {
   const history = getHistory();
   const level = getLevelInfo(user.xp);
   const weeklyCount = getWeeklyCount(history);
-  const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
+  const displayStreak = getDisplayStreak(user.lastPracticeDate, user.streak);
   const activeCourse = getActiveCourse(history);
   const recommendation = getRecommendation(history);
   const trackTarget = getContinueTarget();
@@ -49,7 +49,7 @@ export function renderHome(container) {
 
       <div class="stat-row">
         <div class="stat-pill">
-          <div class="stat-pill-value">${streakInfo.streak}</div>
+          <div class="stat-pill-value">${displayStreak}</div>
           <div class="stat-pill-label">Day Streak</div>
         </div>
         <div class="stat-pill">

@@ -7,7 +7,7 @@
  */
 
 import { getHistory, getUser } from '../utils/storage.js';
-import { getLevelInfo, getWeeklyCount } from '../utils/xp.js';
+import { getLevelInfo, getWeeklyCount, getDisplayStreak } from '../utils/xp.js';
 import { generateInsight } from '../utils/recommendations.js';
 import { navigateTo } from '../lib/router.js';
 
@@ -89,7 +89,7 @@ function renderOverview(history, user, weeklyCount, level) {
 
   const totalMinutes = Math.round(history.reduce((a, s) => a + (s.totalDuration || 0), 0) / 60);
   const totalSessions = history.length;
-  const streak = user.streak || 0;
+  const streak = getDisplayStreak(user.lastPracticeDate, user.streak || 0);
 
   return `
     <!-- Today / Week stats -->
@@ -219,7 +219,7 @@ function renderLog(history) {
               <div class="history-name">${session.workoutName}</div>
               <div class="history-meta">
                 ${formatDate(session.completedAt)} · ${Math.round(session.totalDuration / 60)} min · ${session.setsCompleted}/${session.totalSets} sets
-                ${session.totalFillerCount !== null ? ` · ${session.totalFillerCount} fillers` : ''}
+                ${session.totalFillerCount != null ? ` · ${session.totalFillerCount} fillers` : ''}
               </div>
             </div>
             <div class="history-right">
@@ -256,7 +256,7 @@ function renderSessionDetail(container, session) {
           <div class="stat-value">${session.setsCompleted}/${session.totalSets}</div>
           <div class="stat-label">sets</div>
         </div>
-        ${session.totalFillerCount !== null ? `
+        ${session.totalFillerCount != null ? `
           <div class="stat-card">
             <div class="stat-value">${session.totalFillerCount}</div>
             <div class="stat-label">fillers</div>

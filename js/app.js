@@ -24,7 +24,7 @@ import { renderInterviewDrill, cleanupInterviewDrill } from './screens/interview
 import { renderInterviewUpload } from './screens/interview-upload.js';
 import { renderInterviewHistory } from './screens/interview-history.js';
 import { loadAll, getUser, pullAndMerge } from './utils/storage.js';
-import { getLevelInfo, checkStreak } from './utils/xp.js';
+import { getLevelInfo, getDisplayStreak } from './utils/xp.js';
 import { checkSession, isAuthenticated } from './utils/auth.js';
 
 function init() {
@@ -110,13 +110,13 @@ function init() {
 function updateHeader() {
   const user = getUser();
   const level = getLevelInfo(user.xp);
-  const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
+  const displayStreak = getDisplayStreak(user.lastPracticeDate, user.streak);
 
   const streakEl = document.getElementById('header-streak');
   const xpEl = document.getElementById('header-xp');
   const levelEl = document.getElementById('header-level');
 
-  if (streakEl) streakEl.textContent = streakInfo.streak;
+  if (streakEl) streakEl.textContent = displayStreak;
   if (xpEl) xpEl.textContent = `${user.xp} XP`;
   if (levelEl) levelEl.textContent = `LVL ${level.level}`;
 }
