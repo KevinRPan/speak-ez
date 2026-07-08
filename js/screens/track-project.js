@@ -128,6 +128,7 @@ export function renderTrackProject(container, data = {}) {
         trackId: track.id,
         projectId: project.id,
         prompts: project.prompts || null,
+        coaching: project.coaching || null,
       },
     });
   });

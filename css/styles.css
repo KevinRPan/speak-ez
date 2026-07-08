@@ -1351,6 +1351,11 @@ a {
   color: var(--blue);
 }
 
+.badge-pink {
+  background: rgba(247, 37, 133, 0.15);
+  color: #F72585;
+}
+
 /* === UTILITIES === */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }

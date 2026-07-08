@@ -134,6 +134,6 @@ function renderExerciseDetail(container, exercise, goBack) {
 }
 
 function getBadgeType(category) {
-  const map = { warmup: 'accent', vocal: 'purple', physical: 'blue', content: 'success' };
+  const map = { warmup: 'accent', vocal: 'purple', physical: 'blue', content: 'success', performance: 'pink' };
   return map[category] || 'accent';
 }

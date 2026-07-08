@@ -520,9 +520,16 @@ async function requestReview() {
     const promptText = set.prompt || set.exercise.name;
 
     const feedbackBody = { media: base64, mimeType, prompt: promptText };
-    const interviewCtx = getInterviewContext();
-    if (interviewCtx) {
-      feedbackBody.interviewContext = interviewCtx;
+    // Track projects with drill-specific coaching (acting, improv) get judged
+    // on the drill's own terms; interview tailoring would be wrong there.
+    const coaching = state.trackContext?.coaching;
+    if (coaching) {
+      feedbackBody.coachContext = coaching;
+    } else {
+      const interviewCtx = getInterviewContext();
+      if (interviewCtx) {
+        feedbackBody.interviewContext = interviewCtx;
+      }
     }
 
     const response = await fetch('/api/feedback', {

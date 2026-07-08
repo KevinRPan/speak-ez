@@ -60,7 +60,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json();
-    const { prompt, media, mimeType, interviewContext } = body;
+    const { prompt, media, mimeType, interviewContext, coachContext } = body;
 
     if (!prompt) {
       return new Response(
@@ -77,7 +77,9 @@ export async function onRequestPost(context) {
     if (isMediaReview) {
       // Multimodal: analyze recording + prompt context
       let systemText = REVIEW_SYSTEM_PROMPT.replace('{{PROMPT}}', prompt);
-      if (interviewContext?.position) {
+      if (typeof coachContext === 'string' && coachContext.trim()) {
+        systemText += `\n\nDrill context: ${coachContext.slice(0, 1500)}\n\nJudge the recording as a coach for this specific drill, following the drill context above — including how to interpret the score dimensions. Keep the JSON structure and score keys exactly the same, but make the strengths, improvements, and example specific to this drill rather than generic public-speaking advice.`;
+      } else if (interviewContext?.position) {
         const role = interviewContext.level
           ? `${interviewContext.level}-level ${interviewContext.position}`
           : interviewContext.position;
