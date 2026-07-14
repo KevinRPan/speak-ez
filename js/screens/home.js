@@ -43,8 +43,8 @@ export function renderHome(container) {
   container.innerHTML = `
     <div class="screen">
       <div class="hero">
-        <div class="hero-brand">Speak<span class="brand-accent">-EZ</span></div>
-        <div class="hero-tagline">${greeting}. Ready to train?</div>
+        <div class="hero-brand">${greeting}<span class="brand-accent">.</span></div>
+        <div class="hero-tagline">Ready to train?</div>
       </div>
 
       <div class="stat-row">

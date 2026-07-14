@@ -44,14 +44,14 @@ export function navigateTo(screen, data = {}) {
         <div class="card" style="margin-top: 24px;">
           <div class="h3" style="margin-bottom: 8px;">Something went wrong</div>
           <div class="text-secondary" style="margin-bottom: 12px;">We hit an error while opening this screen.</div>
-          <button class="btn btn-primary" data-action="router-recover">Back to Interview Setup</button>
+          <button class="btn btn-primary" data-action="router-recover">Go Home</button>
         </div>
       </div>
     `;
     container.onclick = (e) => {
       const action = e.target.closest('[data-action]');
       if (action?.dataset.action === 'router-recover') {
-        navigateTo('interview-setup');
+        navigateTo('home');
       }
     };
     document.querySelector('.header').style.display = '';
@@ -74,8 +74,8 @@ function updateNav(screen) {
     'workout-detail': 'home',
     'active-workout': null,
     'workout-complete': null,
-    'history': 'history',
-    'exercises': 'exercises',
+    'history': 'performance',
+    'exercises': 'home',
     'profile': 'profile',
     'scenarios': 'scenarios',
     'scenario-detail': 'scenarios',
@@ -92,6 +92,12 @@ function updateNav(screen) {
 
   const activeTab = screenToTab[screen] || 'home';
   document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.tab === activeTab);
+    const isActive = item.dataset.tab === activeTab;
+    item.classList.toggle('active', isActive);
+    if (isActive) {
+      item.setAttribute('aria-current', 'page');
+    } else {
+      item.removeAttribute('aria-current');
+    }
   });
 }

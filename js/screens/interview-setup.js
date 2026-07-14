@@ -45,7 +45,7 @@ export function renderInterviewSetup(container) {
           <div class="workout-card-info">
             <div class="workout-card-name">Upload Recording</div>
             <div class="workout-card-meta">
-              MP4/audio -> transcript -> interviewer-style feedback
+              Upload a video or audio take for interviewer-style feedback
             </div>
           </div>
           <div class="workout-card-arrow">›</div>
