@@ -31,7 +31,7 @@ function renderAccountCard() {
         <div class="auth-prompt">Sign in to sync across devices</div>
         <div class="auth-form">
           <input type="email" class="auth-input" id="auth-email" placeholder="you@email.com" autocomplete="email" />
-          <button class="btn btn-sm btn-primary" data-action="send-magic-link">Send magic link</button>
+          <button class="btn btn-sm btn-primary" data-action="send-magic-link">Send link</button>
         </div>
         <div class="auth-status" id="auth-status"></div>
       </div>
