@@ -445,7 +445,7 @@ a {
 }
 
 .flow-sep {
-  opacity: 0.45;
+  color: var(--text-secondary);
 }
 
 .flow-step.is-current {
