@@ -5,6 +5,7 @@
 import { TRACKS, getTrackProjectCount } from '../data/tracks.js';
 import { getTrackProgressMap, getTrackSummary, getContinueTarget } from '../utils/track-progress.js';
 import { navigateTo } from '../lib/router.js';
+import { pageHeader } from '../ui/chrome.js';
 
 export function renderTracks(container) {
   const progressMap = getTrackProgressMap();
@@ -12,8 +13,11 @@ export function renderTracks(container) {
 
   container.innerHTML = `
     <div class="screen">
-      <div class="h1 mb-8">Learning Tracks</div>
-      <div class="subtitle mb-24">Structured programs with projects, reps, and evaluations — Toastmasters style.</div>
+      ${pageHeader({
+        kicker: 'Tracks',
+        title: 'Learning Tracks',
+        subtitle: 'Structured programs with projects, reps, and evaluations.',
+      })}
 
       ${continueTarget ? `
         <div class="section">

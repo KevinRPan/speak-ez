@@ -80,7 +80,7 @@ function renderRecording() {
           <span class="phase-dot"></span>
           <span class="phase-dot"></span>
         </div>
-        <span class="label">Recording</span>
+        <span class="label">Scenarios · Record</span>
       </div>
 
       <div class="scenario-prompt-banner">
@@ -161,7 +161,7 @@ function renderReview() {
           <span class="phase-dot"></span>
           <span class="phase-dot"></span>
         </div>
-        <span class="label">Review</span>
+        <span class="label">Scenarios · Review</span>
       </div>
 
       <h2 class="scenario-review-title">Review Your Response</h2>
@@ -229,7 +229,7 @@ function renderQA() {
           <span class="phase-dot active"></span>
           <span class="phase-dot"></span>
         </div>
-        <span class="label">Q&A (${qaRound}/${qaTotal})</span>
+        <span class="label">Scenarios · Q&A (${qaRound}/${qaTotal})</span>
       </div>
 
       <div class="qa-chat-container">
@@ -361,6 +361,7 @@ function renderComplete() {
   container.innerHTML = `
     <div class="screen scenario-practice-screen">
       <div class="scenario-complete">
+        <p class="page-kicker">Scenarios · Done</p>
         <div class="complete-icon">🎉</div>
         <h2 class="complete-title">Scenario Complete!</h2>
         <p class="complete-subtitle">${scenario.name}</p>

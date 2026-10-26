@@ -5,6 +5,7 @@
 
 import { getScenario } from '../data/scenarios.js';
 import { navigateTo } from '../lib/router.js';
+import { flowBar } from '../ui/chrome.js';
 
 export function renderScenarioDetail(container, data = {}) {
   const scenario = getScenario(data.scenarioId);
@@ -15,9 +16,11 @@ export function renderScenarioDetail(container, data = {}) {
 
   container.innerHTML = `
     <div class="screen">
-      <div class="scenario-detail-header">
-        <button class="btn btn-ghost btn-sm" data-action="back">← Back</button>
-      </div>
+      ${flowBar({
+        backAction: 'back',
+        backLabel: 'Scenarios',
+        steps: [{ label: scenario.name, current: true }],
+      })}
 
       <div class="scenario-briefing">
         <div class="scenario-briefing-badge">

@@ -6,6 +6,7 @@
 import { workoutTemplates, getWorkout, calculateWorkoutDuration, warmupExercises } from '../data/workouts.js';
 import { getExercise, CATEGORIES, CATEGORY_INFO } from '../data/exercises.js';
 import { navigateTo } from '../lib/router.js';
+import { flowBar, pageHeader } from '../ui/chrome.js';
 
 export function renderWorkouts(container, data = {}) {
   const filterMinutes = data.filterMinutes || null;
@@ -16,8 +17,16 @@ export function renderWorkouts(container, data = {}) {
 
   container.innerHTML = `
     <div class="screen">
-      <div class="h1 mb-8">Choose Workout</div>
-      <div class="subtitle mb-24">Pick a template or set your available time.</div>
+      ${flowBar({
+        backId: 'back-to-home',
+        backLabel: 'Home',
+        steps: [{ label: 'Workouts', current: true }],
+      })}
+      ${pageHeader({
+        kicker: 'Practice',
+        title: 'Choose a workout',
+        subtitle: 'Pick a template or set your available time.',
+      })}
 
       <!-- Time Filter -->
       <div class="section">
@@ -82,6 +91,10 @@ export function renderWorkouts(container, data = {}) {
       navigateTo('workout-detail', { workoutId: card.dataset.workout });
     });
   });
+
+  document.getElementById('back-to-home').addEventListener('click', () => {
+    navigateTo('home');
+  });
 }
 
 export function renderWorkoutDetail(container, data = {}) {
@@ -98,7 +111,11 @@ export function renderWorkoutDetail(container, data = {}) {
 
   container.innerHTML = `
     <div class="screen">
-      <button class="back-btn" id="back-to-workouts">← Workouts</button>
+      ${flowBar({
+        backId: 'back-to-workouts',
+        backLabel: 'Workouts',
+        steps: [{ label: workout.name, current: true }],
+      })}
 
       <div style="text-align: center; padding: 16px 0 24px;">
         <div style="font-size: 3rem; margin-bottom: 8px;">${workout.icon}</div>

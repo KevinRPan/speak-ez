@@ -10,6 +10,7 @@ import { getHistory, getUser } from '../utils/storage.js';
 import { getLevelInfo, getWeeklyCount, getDisplayStreak } from '../utils/xp.js';
 import { generateInsight } from '../utils/recommendations.js';
 import { navigateTo } from '../lib/router.js';
+import { flowBar, pageHeader } from '../ui/chrome.js';
 
 const SCORE_CATEGORIES = [
   { key: 'clarity',     label: 'Clarity',     color: '#00B4D8' },
@@ -36,7 +37,11 @@ function renderScreen(container) {
   container.innerHTML = `
     <div class="screen">
       <div class="perf-header">
-        <div class="h1">Performance</div>
+        ${pageHeader({
+          kicker: 'Progress',
+          title: 'Performance',
+          subtitle: 'Scores, streaks, and the sessions you have logged.',
+        })}
         <div class="perf-tab-row">
           <button class="perf-tab ${activeTab === 'overview' ? 'active' : ''}" data-tab="overview">Overview</button>
           <button class="perf-tab ${activeTab === 'log' ? 'active' : ''}" data-tab="log">Session Log</button>
@@ -239,7 +244,11 @@ function renderSessionDetail(container, session) {
 
   container.innerHTML = `
     <div class="screen">
-      <button class="back-btn" data-action="back">← Performance</button>
+      ${flowBar({
+        backAction: 'back',
+        backLabel: 'Progress',
+        steps: [{ label: session.workoutName || 'Session', current: true }],
+      })}
 
       <div style="text-align: center; padding: 12px 0 20px;">
         <div style="font-size: 2.5rem; margin-bottom: 8px;">${session.icon || '🎯'}</div>

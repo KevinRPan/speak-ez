@@ -393,6 +393,146 @@ a {
   color: var(--text-tertiary);
 }
 
+/* Shared page header — same top rhythm on every root screen */
+.page-head {
+  margin-bottom: 22px;
+}
+
+.page-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.page-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.page-sub {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 40rem;
+}
+
+/* Path inside a flow: ← Parent / step / current */
+.flow-trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
+.flow-back {
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.flow-back:active,
+.flow-back:hover {
+  color: var(--text);
+}
+
+.flow-sep {
+  color: var(--text-secondary);
+}
+
+.flow-step.is-current {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.session-kicker {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.session-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.session-top .flow-trail {
+  margin-bottom: 0;
+}
+
+/* Home map of the four practice flows */
+.flow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.flow-card {
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius);
+  padding: 14px;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+  .flow-card:active {
+  background: var(--bg-card-hover);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .flow-card:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(255, 107, 53, 0.35);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .flow-card:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(255, 107, 53, 0.35);
+  }
+}
+
+.flow-card-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.flow-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.flow-card-desc {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
+.nav-brand {
+  display: none;
+}
+
 /* === SECTIONS === */
 .section {
   margin-bottom: 28px;
@@ -1122,7 +1262,23 @@ a {
 /* === PROFILE === */
 .profile-header {
   text-align: center;
-  padding: 20px 0 28px;
+  padding: 0 0 28px;
+}
+
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+}
+
+.profile-head .profile-avatar {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.profile-head .page-title {
+  font-size: 1.45rem;
 }
 
 .profile-avatar {
@@ -1929,6 +2085,35 @@ a {
   #app {
     max-width: 1200px;
     flex-direction: row;
+  }
+
+  .header-title {
+    display: none;
+  }
+
+  .header-stats {
+    margin-left: auto;
+  }
+
+  .nav-brand {
+    display: block;
+    padding: 4px 20px 18px;
+  }
+
+  .nav-brand-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .nav-brand-name span {
+    color: var(--accent);
+  }
+
+  .nav-brand-tag {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
   }
 
   /* Bottom nav becomes left sidebar */
@@ -2906,6 +3091,10 @@ a {
 /* === PERFORMANCE SCREEN === */
 .perf-header {
   padding-bottom: 8px;
+}
+
+.perf-header .page-head {
+  margin-bottom: 0;
 }
 
 .perf-tab-row {

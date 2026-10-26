@@ -1,12 +1,14 @@
 import { navigateTo } from '../lib/router.js';
+import { pageHeader } from '../ui/chrome.js';
 
 export function renderInterviewSetup(container) {
   container.innerHTML = `
     <div class="screen interview-setup-screen">
-      <div class="section-header">
-        <h1 class="h1">Interview Prep</h1>
-      </div>
-      <p class="subtitle" style="margin-bottom: 24px;">Choose how you want to practice. Drills give you curated questions by field and level. Custom mode lets you paste a specific job description.</p>
+      ${pageHeader({
+        kicker: 'Interview',
+        title: 'Interview Prep',
+        subtitle: 'Drills, a pasted job description, or an uploaded recording. Same review either way.',
+      })}
 
       <div class="card" style="margin-bottom: 16px;">
         <label class="label" style="display: block; margin-bottom: 12px;">Interview Type</label>

@@ -7,6 +7,7 @@
 import { getTrackProject, buildProjectWorkout } from '../data/tracks.js';
 import { getProjectProgress, getChecklistStats, getMonitorAreas } from '../utils/track-progress.js';
 import { navigateTo } from '../lib/router.js';
+import { flowBar } from '../ui/chrome.js';
 
 export function renderTrackProject(container, data = {}) {
   const found = getTrackProject(data.trackId, data.projectId);
@@ -24,7 +25,14 @@ export function renderTrackProject(container, data = {}) {
 
   container.innerHTML = `
     <div class="screen">
-      <button class="back-btn" id="back-to-track">← ${track.name}</button>
+      ${flowBar({
+        backId: 'back-to-track',
+        backLabel: track.name,
+        steps: [
+          { label: `Level ${levelIndex + 1}` },
+          { label: project.name, current: true },
+        ],
+      })}
 
       <div class="track-hero">
         <div class="track-hero-icon" style="background: ${track.color}20;">${project.icon}</div>

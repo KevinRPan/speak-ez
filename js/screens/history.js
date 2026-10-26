@@ -4,14 +4,23 @@
 
 import { getHistory } from '../utils/storage.js';
 import { navigateTo } from '../lib/router.js';
+import { flowBar, pageHeader } from '../ui/chrome.js';
 
 export function renderHistory(container) {
   const history = getHistory();
 
   container.innerHTML = `
     <div class="screen">
-      <div class="h1 mb-8">History</div>
-      <div class="subtitle mb-24">${history.length} session${history.length !== 1 ? 's' : ''} logged</div>
+      ${flowBar({
+        backAction: 'go-progress',
+        backLabel: 'Progress',
+        steps: [{ label: 'History', current: true }],
+      })}
+      ${pageHeader({
+        kicker: 'Progress',
+        title: 'History',
+        subtitle: `${history.length} session${history.length !== 1 ? 's' : ''} logged.`,
+      })}
 
       ${history.length === 0 ? `
         <div class="empty-state">
@@ -44,7 +53,9 @@ export function renderHistory(container) {
     const action = e.target.closest('[data-action]');
     if (!action) return;
 
-    if (action.dataset.action === 'start-workout') {
+    if (action.dataset.action === 'go-progress') {
+      navigateTo('performance');
+    } else if (action.dataset.action === 'start-workout') {
       navigateTo('workouts');
     } else if (action.dataset.action === 'view-session') {
       const index = parseInt(action.dataset.index);
@@ -61,7 +72,11 @@ function renderSessionDetail(container, session) {
 
   container.innerHTML = `
     <div class="screen">
-      <button class="back-btn" data-action="back">← History</button>
+      ${flowBar({
+        backAction: 'back',
+        backLabel: 'History',
+        steps: [{ label: session.workoutName || 'Session', current: true }],
+      })}
 
       <div style="text-align: center; padding: 12px 0 20px;">
         <div style="font-size: 2.5rem; margin-bottom: 8px;">${session.icon || '🎯'}</div>

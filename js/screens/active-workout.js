@@ -94,6 +94,11 @@ export function renderActiveWorkout(cont, data = {}) {
   renderCurrentState();
 }
 
+function sessionFlowLabel() {
+  const parent = state.trackContext ? 'Tracks' : 'Practice';
+  return `${parent} · ${state.workout.name}`;
+}
+
 function renderCurrentState() {
   if (!state || !container) return;
   clearInterval(timerInterval);
@@ -122,6 +127,7 @@ function renderReady() {
         <div class="workout-progress-bar">
           <div class="workout-progress-fill" style="width: ${Math.round(progress * 100)}%"></div>
         </div>
+        <div class="session-kicker">${sessionFlowLabel()}</div>
       </div>
 
       <div class="exercise-display">
@@ -200,6 +206,7 @@ function renderActive() {
         <div class="workout-progress-bar">
           <div class="workout-progress-fill" style="width: ${Math.round(progress * 100)}%"></div>
         </div>
+        <div class="session-kicker">${sessionFlowLabel()}</div>
       </div>
 
       ${recordingEnabled ? `
@@ -266,6 +273,7 @@ function renderRating() {
   container.innerHTML = `
     <div class="screen">
       <div class="rating-section">
+        <div class="session-kicker" style="margin-top: 0; margin-bottom: 8px;">${sessionFlowLabel()}</div>
         <div class="exercise-display-name mb-16">${set.exercise.name}</div>
 
         ${isTongueTwister(set) ? renderTongueTwisterResult(set) : ''}
@@ -576,6 +584,7 @@ function renderRest() {
   container.innerHTML = `
     <div class="screen">
       <div class="rest-screen">
+        <div class="session-kicker" style="margin-top: 0;">${sessionFlowLabel()}</div>
         <div class="rest-label">Rest</div>
         <div class="timer-display resting" id="timer">${formatTime(state.timeLeft)}</div>
         ${nextExercise ? `
