@@ -78,6 +78,7 @@ export function renderWorkoutComplete(container, data = {}) {
   container.innerHTML = `
     <div class="screen">
       <div class="complete-screen">
+        <p class="page-kicker">${session.track ? 'Tracks' : 'Practice'} · Session complete</p>
 
         <!-- WHOOP-style reaction card -->
         <div class="reaction-card" style="background: ${rc.bg}; border-color: ${rc.border};">

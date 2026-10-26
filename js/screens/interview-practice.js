@@ -112,7 +112,7 @@ function renderQA() {
             `<span class="phase-dot ${i < qaRound ? 'completed' : (i === qaRound ? 'active' : '')}">${i < qaRound ? '✓' : ''}</span>`
           ).join('')}
         </div>
-        <span class="label">Interview (Q${Math.min(qaRound + 1, qaTotal)}/${qaTotal})</span>
+        <span class="label">Interview · Q${Math.min(qaRound + 1, qaTotal)}/${qaTotal}</span>
       </div>
 
       <div class="qa-chat-container" style="flex: 1; display: flex; flex-direction: column;">
@@ -309,6 +309,7 @@ function renderComplete() {
   container.innerHTML = `
     <div class="screen">
       <div class="scenario-complete" style="text-align: center;">
+        <p class="page-kicker">Interview · Done</p>
         <div class="complete-icon" style="font-size: 4rem; margin-bottom: 12px;">🏆</div>
         <h2 class="complete-title h1 mb-8">Interview Complete!</h2>
         <p class="complete-subtitle text-secondary mb-20">You completed ${state.qaTotal} rounds</p>

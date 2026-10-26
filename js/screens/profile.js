@@ -59,10 +59,16 @@ export function renderProfile(container) {
 
   container.innerHTML = `
     <div class="screen">
+      <header class="page-head profile-head">
+        <div class="profile-avatar" aria-hidden="true">🗣</div>
+        <div>
+          <p class="page-kicker">Profile</p>
+          <h1 class="page-title">${level.title}</h1>
+          <p class="page-sub">Level ${level.level}</p>
+        </div>
+      </header>
+
       <div class="profile-header">
-        <div class="profile-avatar">🗣</div>
-        <div class="h1">${level.title}</div>
-        <div class="subtitle">Level ${level.level}</div>
 
         <!-- Level progress -->
         <div class="mt-16" style="max-width: 280px; margin-left: auto; margin-right: auto;">

@@ -7,6 +7,7 @@ import { getUser, getHistory } from '../utils/storage.js';
 import { getLevelInfo, getWeeklyCount, getDisplayStreak } from '../utils/xp.js';
 import { workoutTemplates } from '../data/workouts.js';
 import { navigateTo } from '../lib/router.js';
+import { pageHeader } from '../ui/chrome.js';
 import { getActiveCourse } from '../utils/curriculum-progress.js';
 import { getRecommendation } from '../utils/recommendations.js';
 import { getContinueTarget } from '../utils/track-progress.js';
@@ -42,10 +43,11 @@ export function renderHome(container) {
 
   container.innerHTML = `
     <div class="screen">
-      <div class="hero">
-        <div class="hero-brand">${greeting}<span class="brand-accent">.</span></div>
-        <div class="hero-tagline">Ready to train?</div>
-      </div>
+      ${pageHeader({
+        kicker: 'Today',
+        title: greeting,
+        subtitle: 'Ready to train?',
+      })}
 
       <div class="stat-row">
         <div class="stat-pill">
@@ -88,6 +90,34 @@ export function renderHome(container) {
         </button>
       </div>
 
+      <div class="section">
+        <div class="section-header">
+          <span class="label">Pick a flow</span>
+        </div>
+        <div class="flow-grid">
+          <button class="flow-card" type="button" data-flow="workouts">
+            <span class="flow-card-icon" aria-hidden="true">🏋️</span>
+            <span class="flow-card-name">Workouts</span>
+            <span class="flow-card-desc">Timed sets you log like a gym session</span>
+          </button>
+          <button class="flow-card" type="button" data-flow="tracks">
+            <span class="flow-card-icon" aria-hidden="true">🎓</span>
+            <span class="flow-card-name">Tracks</span>
+            <span class="flow-card-desc">Projects, reps, and evaluations</span>
+          </button>
+          <button class="flow-card" type="button" data-flow="scenarios">
+            <span class="flow-card-icon" aria-hidden="true">🎬</span>
+            <span class="flow-card-name">Scenarios</span>
+            <span class="flow-card-desc">Real conversations with follow-ups</span>
+          </button>
+          <button class="flow-card" type="button" data-flow="interview-setup">
+            <span class="flow-card-icon" aria-hidden="true">💼</span>
+            <span class="flow-card-name">Interview</span>
+            <span class="flow-card-desc">Drills, custom rounds, and uploads</span>
+          </button>
+        </div>
+      </div>
+
       ${activeCourse ? `
         <div class="section">
           <div class="section-header">
@@ -124,7 +154,7 @@ export function renderHome(container) {
 
       <div class="section">
         <div class="section-header">
-          <span class="label">Learning track</span>
+          <span class="label">Continue</span>
         </div>
         ${trackTarget ? `
           <div class="card card-interactive track-continue-card" id="track-continue-card"
@@ -189,6 +219,10 @@ export function renderHome(container) {
   // Direct event listeners — no delegation, no CustomEvent
   document.getElementById('start-training-btn').addEventListener('click', () => {
     navigateTo('workouts');
+  });
+
+  container.querySelectorAll('[data-flow]').forEach(card => {
+    card.addEventListener('click', () => navigateTo(card.dataset.flow));
   });
 
   const trackCardEl = document.getElementById('track-continue-card');

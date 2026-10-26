@@ -6,6 +6,7 @@
  */
 
 import { navigateTo } from '../lib/router.js';
+import { flowBar, pageHeader } from '../ui/chrome.js';
 import { FIELDS, getQuestions, getRandomQuestion } from '../data/interview-questions.js';
 import { recordPracticeSession, normalizeCriterionScores } from '../utils/practice-log.js';
 
@@ -70,12 +71,16 @@ function renderFieldSelect() {
 
   container.innerHTML = `
     <div class="screen drill-screen">
-      <div class="section-header">
-        <h1 class="h1">Interview Drills</h1>
-      </div>
-      <p class="subtitle" style="margin-bottom: 24px;">
-        Select your field to get interview questions tailored to your role, level, and the specific round you're preparing for.
-      </p>
+      ${flowBar({
+        backAction: 'back-to-setup',
+        backLabel: 'Interview',
+        steps: [{ label: 'Drills', current: true }],
+      })}
+      ${pageHeader({
+        kicker: 'Interview',
+        title: 'Choose a field',
+        subtitle: 'Questions scale with your role, level, and the round you are preparing for.',
+      })}
 
       <div class="drill-field-list">
         ${fields.map(([key, f]) => `
@@ -100,9 +105,6 @@ function renderFieldSelect() {
         More fields coming soon \u2014 Engineering Management, Design, Marketing, and custom fields
       </div>
 
-      <button class="btn btn-ghost btn-block" style="margin-top: 16px;" data-action="back-to-setup">
-        \u2190 Back to Interview Setup
-      </button>
     </div>
   `;
 
@@ -137,9 +139,11 @@ function renderLevelSelect() {
 
   container.innerHTML = `
     <div class="screen drill-screen">
-      <button class="btn btn-ghost btn-sm" data-action="back" style="margin-bottom: 16px;">
-        \u2190 Back
-      </button>
+      ${flowBar({
+        backAction: 'back',
+        backLabel: 'Drills',
+        steps: [{ label: f.label, current: true }],
+      })}
 
       <div style="font-size: 1.8rem; margin-bottom: 8px;">${f.icon}</div>
       <h2 class="h1" style="margin-bottom: 8px;">${f.label}</h2>
@@ -193,9 +197,14 @@ function renderRoundSelect() {
 
   container.innerHTML = `
     <div class="screen drill-screen">
-      <button class="btn btn-ghost btn-sm" data-action="back" style="margin-bottom: 16px;">
-        \u2190 Back
-      </button>
+      ${flowBar({
+        backAction: 'back',
+        backLabel: f.label,
+        steps: [
+          { label: state.level },
+          { label: 'Round', current: true },
+        ],
+      })}
 
       <h2 class="h1" style="margin-bottom: 8px;">Choose your round</h2>
       <p class="subtitle" style="margin-bottom: 24px;">
@@ -298,8 +307,12 @@ function renderSession() {
 
   container.innerHTML = `
     <div class="screen drill-screen drill-session">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <button class="btn btn-ghost btn-sm" data-action="back-to-round">\u2190 Back</button>
+      <div class="session-top">
+        ${flowBar({
+          backAction: 'back-to-round',
+          backLabel: 'Rounds',
+          steps: [{ label: roundData?.label || 'Question', current: true }],
+        })}
         ${state.mode === 'recording' || state.mode === 'typing' ? `
           <div class="drill-timer" id="drill-timer" style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 500; letter-spacing: 0.05em; color: ${elapsedSeconds > 240 ? 'var(--danger)' : elapsedSeconds > 180 ? 'var(--warning)' : 'var(--text)'};">
             ${formatTime(elapsedSeconds)}
@@ -566,6 +579,13 @@ function renderReview() {
 
   container.innerHTML = `
     <div class="screen drill-screen drill-review">
+      ${flowBar({
+        steps: [
+          { label: 'Interview' },
+          { label: 'Drills' },
+          { label: 'Review', current: true },
+        ],
+      })}
       <h2 class="h1" style="margin-bottom: 6px;">Session Review</h2>
       <p class="subtitle" style="margin-bottom: 24px;">
         ${roundData?.label || ''} \u00B7 ${state.level} ${FIELDS[state.field]?.label || ''}

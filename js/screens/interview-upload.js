@@ -1,4 +1,5 @@
 import { navigateTo } from '../lib/router.js';
+import { flowBar, pageHeader } from '../ui/chrome.js';
 import { addInterviewUploadSession, getInterviewUploadSessions } from '../utils/storage.js';
 
 const DEFAULT_ROLE = 'Senior Staff Data Science interviewer at Anthropic';
@@ -20,17 +21,16 @@ export function renderInterviewUpload(container) {
 
   container.innerHTML = `
     <div class="screen interview-upload-screen">
-      <button class="btn btn-ghost btn-sm" id="upload-back-btn" style="margin-bottom: 16px;">
-        <- Back
-      </button>
-
-      <div class="section-header">
-        <h1 class="h1">Upload Interview Recording</h1>
-      </div>
-
-      <p class="subtitle" style="margin-bottom: 18px;">
-        Upload MP4/audio, transcribe it first, then evaluate and continue with grounded follow-up questions.
-      </p>
+      ${flowBar({
+        backId: 'upload-back-btn',
+        backLabel: 'Interview',
+        steps: [{ label: 'Upload', current: true }],
+      })}
+      ${pageHeader({
+        kicker: 'Interview',
+        title: 'Upload a recording',
+        subtitle: 'Transcribe the take, then get interviewer-style feedback and a follow-up.',
+      })}
 
       <div class="card" style="margin-bottom: 12px;">
         <label class="label" for="upload-thread-mode" style="display: block; margin-bottom: 8px;">Session Mode</label>

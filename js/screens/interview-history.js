@@ -1,4 +1,5 @@
 import { navigateTo } from '../lib/router.js';
+import { flowBar, pageHeader } from '../ui/chrome.js';
 import { getInterviewUploadSessions } from '../utils/storage.js';
 
 export function renderInterviewHistory(container) {
@@ -14,16 +15,16 @@ export function renderInterviewHistory(container) {
 
   container.innerHTML = `
     <div class="screen interview-history-screen">
-      <button class="btn btn-ghost btn-sm" data-action="back" style="margin-bottom: 16px;">
-        <- Back
-      </button>
-
-      <div class="section-header">
-        <h1 class="h1">Interview Upload History</h1>
-      </div>
-      <p class="subtitle" style="margin-bottom: 18px;">
-        ${sessions.length} upload session${sessions.length === 1 ? '' : 's'} tracked
-      </p>
+      ${flowBar({
+        backAction: 'back',
+        backLabel: 'Interview',
+        steps: [{ label: 'History', current: true }],
+      })}
+      ${pageHeader({
+        kicker: 'Interview',
+        title: 'Upload history',
+        subtitle: `${sessions.length} upload session${sessions.length === 1 ? '' : 's'} tracked.`,
+      })}
 
       <div class="card" style="margin-bottom: 14px;">
         <div class="label" style="margin-bottom: 10px;">Score Trend</div>
@@ -62,12 +63,16 @@ function renderInterviewHistoryDetail(container, session) {
 
   container.innerHTML = `
     <div class="screen interview-history-detail-screen">
-      <button class="btn btn-ghost btn-sm" data-action="back-to-history" style="margin-bottom: 16px;">
-        <- History
-      </button>
-
-      <div class="h1" style="margin-bottom: 6px;">${escapeHtml(upload.fileName || 'Interview Upload')}</div>
-      <div class="subtitle" style="margin-bottom: 14px;">${formatDate(session.completedAt)} • ${escapeHtml(formatInterviewType(upload.interviewType))}</div>
+      ${flowBar({
+        backAction: 'back-to-history',
+        backLabel: 'History',
+        steps: [{ label: 'Upload', current: true }],
+      })}
+      ${pageHeader({
+        kicker: 'Interview',
+        title: upload.fileName || 'Interview upload',
+        subtitle: `${formatDate(session.completedAt)} · ${formatInterviewType(upload.interviewType)}`,
+      })}
 
       <div class="card" style="margin-bottom: 12px;">
         <div class="label" style="margin-bottom: 8px;">Overall Score</div>

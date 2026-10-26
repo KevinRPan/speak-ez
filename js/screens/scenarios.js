@@ -5,6 +5,7 @@
 
 import { scenarios, SCENARIO_CATEGORY_INFO, SCENARIO_CATEGORIES, getScenariosByCategory, getCategories } from '../data/scenarios.js';
 import { navigateTo } from '../lib/router.js';
+import { pageHeader } from '../ui/chrome.js';
 
 let activeCategory = SCENARIO_CATEGORIES.PROFESSIONAL;
 
@@ -15,10 +16,11 @@ export function renderScenarios(container) {
 
   container.innerHTML = `
     <div class="screen">
-      <div class="scenarios-header">
-        <div class="scenarios-title">Scenario Practice</div>
-        <div class="scenarios-subtitle">Practice real-world conversations with AI follow-up</div>
-      </div>
+      ${pageHeader({
+        kicker: 'Scenarios',
+        title: 'Scenario Practice',
+        subtitle: 'Practice real-world conversations with AI follow-up.',
+      })}
 
       <div class="category-pills-scroll">
         <div class="category-pills">

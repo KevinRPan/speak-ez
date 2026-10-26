@@ -3,6 +3,8 @@
  */
 
 import { exercises, CATEGORIES, CATEGORY_INFO } from '../data/exercises.js';
+import { navigateTo } from '../lib/router.js';
+import { flowBar, pageHeader } from '../ui/chrome.js';
 
 export function renderExercises(container) {
   let activeCategory = null;
@@ -14,8 +16,16 @@ export function renderExercises(container) {
 
     container.innerHTML = `
       <div class="screen">
-        <div class="h1 mb-8">Exercises</div>
-        <div class="subtitle mb-20">${exercises.length} exercises across ${Object.keys(CATEGORIES).length} categories</div>
+        ${flowBar({
+          backAction: 'go-home',
+          backLabel: 'Home',
+          steps: [{ label: 'Exercises', current: true }],
+        })}
+        ${pageHeader({
+          kicker: 'Practice',
+          title: 'Exercise library',
+          subtitle: `${exercises.length} exercises across ${Object.keys(CATEGORIES).length} categories.`,
+        })}
 
         <!-- Category Filter -->
         <div class="category-filter mb-24">
@@ -52,7 +62,9 @@ export function renderExercises(container) {
       if (!action) return;
       const type = action.dataset.action;
 
-      if (type === 'filter') {
+      if (type === 'go-home') {
+        navigateTo('home');
+      } else if (type === 'filter') {
         activeCategory = action.dataset.category || null;
         render();
       } else if (type === 'view-exercise') {
@@ -70,7 +82,11 @@ function renderExerciseDetail(container, exercise, goBack) {
 
   container.innerHTML = `
     <div class="screen">
-      <button class="back-btn" data-action="back">← Exercises</button>
+      ${flowBar({
+        backAction: 'back',
+        backLabel: 'Exercises',
+        steps: [{ label: exercise.name, current: true }],
+      })}
 
       <div style="text-align: center; padding: 16px 0 24px;">
         <div style="font-size: 2.5rem; margin-bottom: 8px;">${catInfo.icon}</div>
