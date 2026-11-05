@@ -56,14 +56,19 @@ The goal is not a course or curriculum — it's a **training tool**. Like HEVY d
 **Goal:** Make daily practice sticky. This is the "streaks and PRs" layer.
 
 ### Streaks
-- [ ] Daily streak tracking (1+ drill = active day)
-- [ ] Streak display on home screen
+- [x] Daily streak tracking (1+ drill = active day)
+- [x] Streak display on home screen
 - [ ] Streak recovery grace period (optional)
 
 ### XP & Levels
-- [ ] XP earned per drill (varies by type/duration)
-- [ ] Level progression with thresholds
-- [ ] Level-up celebration moment
+- [x] XP earned per drill (varies by type/duration)
+- [x] Level progression with thresholds
+- [x] Level-up celebration moment
+
+### Daily Spark
+- [x] Rotating short daily challenge on home (novelty > willpower)
+- [x] Bonus XP for claiming today's spark once
+- [x] Spark week dots + spark streak chip
 
 ### Personal Records
 - [ ] Auto-detect PRs per drill type per metric

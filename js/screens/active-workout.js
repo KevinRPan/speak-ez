@@ -52,11 +52,11 @@ export function renderActiveWorkout(cont, data = {}) {
 
   // Build flat list of all sets
   // If custom exercises were passed (user swapped warmups), use those directly.
-  // Otherwise, randomize warmup exercises for variety.
+  // Daily Sparks keep their exact recipe; otherwise randomize warmup slots.
   const sets = [];
   const workoutExercises = data.customExercises
     ? data.customExercises
-    : randomizeWarmups(workout.exercises);
+    : (workout.isDailySpark ? workout.exercises : randomizeWarmups(workout.exercises));
   workoutExercises.forEach((ex, exIndex) => {
     const exercise = getExercise(ex.exerciseId);
     for (let s = 0; s < ex.sets; s++) {
@@ -85,6 +85,10 @@ export function renderActiveWorkout(cont, data = {}) {
     startedAt: Date.now(),
     ratings: [],
     trackContext: data.trackContext || null,
+    sparkContext: data.sparkContext || (workout.isDailySpark ? {
+      sparkId: workout.sparkId,
+      sparkDayKey: workout.sparkDayKey,
+    } : null),
   };
 
   // Reset recording state for new workout
@@ -95,7 +99,11 @@ export function renderActiveWorkout(cont, data = {}) {
 }
 
 function sessionFlowLabel() {
-  const parent = state.trackContext ? 'Tracks' : 'Practice';
+  const parent = state.sparkContext
+    ? 'Daily Spark'
+    : state.trackContext
+      ? 'Tracks'
+      : 'Practice';
   return `${parent} · ${state.workout.name}`;
 }
 
@@ -674,6 +682,12 @@ function finishWorkout() {
       trackId: state.trackContext.trackId,
       projectId: state.trackContext.projectId,
     };
+  }
+
+  if (state.sparkContext) {
+    session.isDailySpark = true;
+    session.sparkId = state.sparkContext.sparkId;
+    session.sparkDayKey = state.sparkContext.sparkDayKey;
   }
 
   // Revoke any remaining blob URLs

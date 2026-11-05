@@ -56,6 +56,11 @@ export function calculateSessionXp(session) {
     xp += Math.min(session.streakDay * 5, 50);
   }
 
+  // Daily Spark quest bonus (awarded once when the session is tagged as today's spark)
+  if (session.isDailySpark && session.sparkBonusXp) {
+    xp += session.sparkBonusXp;
+  }
+
   return xp;
 }
 

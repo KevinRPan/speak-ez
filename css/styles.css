@@ -3743,6 +3743,216 @@ a {
   text-wrap: balance;
 }
 
+/* === DAILY SPARK === */
+.spark-streak-chip {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--spark-chip, #FDCB6E);
+  background: rgba(253, 203, 110, 0.12);
+  border: 1px solid rgba(253, 203, 110, 0.28);
+  border-radius: var(--radius-xs);
+  padding: 4px 8px;
+}
+
+.spark-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--spark-color, var(--accent)) 45%, transparent);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--spark-color, var(--accent)) 22%, #12121a) 0%, #12121a 58%, #16161e 100%);
+  padding: 16px;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--spark-color, var(--accent)) 18%, transparent);
+}
+
+.spark-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--spark-color, var(--accent)) 70%, white 10%);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--spark-color, var(--accent)) 28%, transparent);
+}
+
+.spark-card:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.spark-card--done {
+  cursor: default;
+  opacity: 0.82;
+  box-shadow: none;
+}
+
+.spark-card--done:hover {
+  transform: none;
+}
+
+.spark-card-glow {
+  position: absolute;
+  top: -40%;
+  right: -15%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--spark-color, var(--accent)) 45%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  animation: spark-drift 5s ease-in-out infinite alternate;
+}
+
+.spark-card-top {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  z-index: 1;
+}
+
+.spark-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--spark-color, var(--accent)) 22%, #1c1c28);
+  border: 1px solid color-mix(in srgb, var(--spark-color, var(--accent)) 35%, transparent);
+  animation: spark-pop 2.8s ease-in-out infinite;
+}
+
+.spark-card-kicker {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--spark-color, var(--accent)) 75%, white);
+  margin-bottom: 4px;
+}
+
+.spark-card-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.spark-card-hook {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.spark-card-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.spark-card-vibe {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.spark-card-cta {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--spark-color, var(--accent)) 80%, white);
+}
+
+.spark-card--done .spark-card-cta {
+  color: var(--success);
+}
+
+.spark-week {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+}
+
+.spark-week-dot {
+  flex: 1;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  padding: 6px 0;
+}
+
+.spark-week-dot.is-lit {
+  color: #0a0a0f;
+  background: color-mix(in srgb, var(--spark-color, var(--accent)) 85%, white);
+  border-color: transparent;
+}
+
+.spark-week-dot.is-today:not(.is-lit) {
+  border-color: color-mix(in srgb, var(--spark-color, var(--accent)) 55%, transparent);
+  color: color-mix(in srgb, var(--spark-color, var(--accent)) 80%, white);
+}
+
+.spark-claimed-banner {
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(253, 203, 110, 0.4);
+  background: linear-gradient(160deg, rgba(253, 203, 110, 0.16), rgba(255, 107, 53, 0.08));
+  animation: spark-claim-in 0.45s ease;
+}
+
+.spark-claimed-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #FDCB6E;
+  margin-bottom: 6px;
+}
+
+.spark-claimed-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.spark-claimed-bonus {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+@keyframes spark-drift {
+  from { transform: translate(0, 0) scale(1); opacity: 0.7; }
+  to { transform: translate(-18px, 12px) scale(1.12); opacity: 1; }
+}
+
+@keyframes spark-pop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes spark-claim-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* === REDUCED MOTION === */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
