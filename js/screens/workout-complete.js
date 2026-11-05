@@ -8,6 +8,12 @@ import { navigateTo } from '../lib/router.js';
 import { generateSessionReaction } from '../utils/session-feedback.js';
 import { getTrackProject, buildProjectWorkout } from '../data/tracks.js';
 import { recordRep, updateRep, getProjectProgress, getMonitorAreas } from '../utils/track-progress.js';
+import {
+  getTodaySpark,
+  buildSparkWorkout,
+  isSparkCompletedToday,
+  DAILY_SPARK_BONUS_XP,
+} from '../utils/daily-spark.js';
 
 export function renderWorkoutComplete(container, data = {}) {
   const session = data.session;
@@ -21,6 +27,18 @@ export function renderWorkoutComplete(container, data = {}) {
   const historyBeforeSession = getHistory();
   const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
   session.streakDay = streakInfo.streak;
+
+  // Award Daily Spark bonus once per calendar day
+  const todaySpark = getTodaySpark();
+  const claimingSpark = Boolean(
+    session.isDailySpark
+    && session.sparkDayKey === todaySpark.dayKey
+    && !isSparkCompletedToday(historyBeforeSession, todaySpark)
+  );
+  if (claimingSpark) {
+    session.sparkBonusXp = DAILY_SPARK_BONUS_XP;
+  }
+
   const xpEarned = calculateSessionXp(session);
   session.xpEarned = xpEarned;
 
@@ -78,7 +96,15 @@ export function renderWorkoutComplete(container, data = {}) {
   container.innerHTML = `
     <div class="screen">
       <div class="complete-screen">
-        <p class="page-kicker">${session.track ? 'Tracks' : 'Practice'} · Session complete</p>
+        <p class="page-kicker">${session.isDailySpark ? 'Daily Spark' : session.track ? 'Tracks' : 'Practice'} · Session complete</p>
+
+        ${claimingSpark ? `
+          <div class="spark-claimed-banner">
+            <div class="spark-claimed-label">Daily Spark claimed</div>
+            <div class="spark-claimed-title">${session.workoutName}</div>
+            <div class="spark-claimed-bonus">+${DAILY_SPARK_BONUS_XP} bonus XP</div>
+          </div>
+        ` : ''}
 
         <!-- WHOOP-style reaction card -->
         <div class="reaction-card" style="background: ${rc.bg}; border-color: ${rc.border};">
@@ -119,8 +145,8 @@ export function renderWorkoutComplete(container, data = {}) {
           </div>
         ` : ''}
 
-        <div class="complete-icon">${leveledUp ? '🎉' : '💪'}</div>
-        <div class="complete-title">Workout Complete!</div>
+        <div class="complete-icon">${leveledUp ? '🎉' : claimingSpark ? '✨' : '💪'}</div>
+        <div class="complete-title">${claimingSpark ? 'Spark Complete!' : 'Workout Complete!'}</div>
         <div class="complete-subtitle">${session.workoutName}</div>
 
         ${leveledUp ? `
@@ -228,6 +254,13 @@ export function renderWorkoutComplete(container, data = {}) {
           projectId: trackInfo.project.id,
           prompts: trackInfo.project.prompts || null,
         },
+      });
+    } else if (session.isDailySpark) {
+      // Replay for fun — bonus XP only awards once per day
+      const spark = getTodaySpark();
+      navigateTo('active-workout', {
+        workout: buildSparkWorkout(spark),
+        sparkContext: { sparkId: spark.id, sparkDayKey: spark.dayKey },
       });
     } else {
       navigateTo('active-workout', { workoutId: session.workoutId });

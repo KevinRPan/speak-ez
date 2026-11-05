@@ -11,6 +11,14 @@ import { pageHeader } from '../ui/chrome.js';
 import { getActiveCourse } from '../utils/curriculum-progress.js';
 import { getRecommendation } from '../utils/recommendations.js';
 import { getContinueTarget } from '../utils/track-progress.js';
+import {
+  getTodaySpark,
+  buildSparkWorkout,
+  isSparkCompletedToday,
+  getSparkDaysThisWeek,
+  getSparkStreak,
+  DAILY_SPARK_BONUS_XP,
+} from '../utils/daily-spark.js';
 
 export function renderHome(container) {
   const user = getUser();
@@ -21,6 +29,10 @@ export function renderHome(container) {
   const activeCourse = getActiveCourse(history);
   const recommendation = getRecommendation(history);
   const trackTarget = getContinueTarget();
+  const todaySpark = getTodaySpark();
+  const sparkDone = isSparkCompletedToday(history, todaySpark);
+  const sparkWeekDays = getSparkDaysThisWeek(history);
+  const sparkStreak = getSparkStreak(history);
 
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const now = new Date();
@@ -82,6 +94,38 @@ export function renderHome(container) {
           </div>
         </div>
         <div class="level-xp-text">${level.title} — ${user.xp} XP${level.next ? ` / ${level.next.xp} XP` : ''}</div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span class="label">Daily Spark</span>
+          ${sparkStreak > 0 ? `<span class="spark-streak-chip">${sparkStreak}-day spark streak</span>` : ''}
+        </div>
+        <button
+          class="spark-card ${sparkDone ? 'spark-card--done' : ''}"
+          type="button"
+          id="daily-spark-btn"
+          style="--spark-color: ${todaySpark.color};"
+        >
+          <div class="spark-card-glow" aria-hidden="true"></div>
+          <div class="spark-card-top">
+            <div class="spark-card-icon">${todaySpark.icon}</div>
+            <div class="spark-card-copy">
+              <div class="spark-card-kicker">${sparkDone ? 'Spark claimed' : 'Today\'s quest'} · ${todaySpark.durationMin} min · +${DAILY_SPARK_BONUS_XP} XP</div>
+              <div class="spark-card-title">${todaySpark.title}</div>
+              <div class="spark-card-hook">${todaySpark.hook}</div>
+            </div>
+          </div>
+          <div class="spark-card-footer">
+            <span class="spark-card-vibe">${todaySpark.vibe}</span>
+            <span class="spark-card-cta">${sparkDone ? 'Done for today' : 'Start spark ›'}</span>
+          </div>
+          <div class="spark-week" aria-label="Spark completions this week">
+            ${weekDays.map((day, i) => `
+              <span class="spark-week-dot ${sparkWeekDays.has(i) ? 'is-lit' : ''} ${i === dayOfWeek - 1 ? 'is-today' : ''}">${day}</span>
+            `).join('')}
+          </div>
+        </button>
       </div>
 
       <div class="cta-section section">
@@ -217,6 +261,14 @@ export function renderHome(container) {
   `;
 
   // Direct event listeners — no delegation, no CustomEvent
+  document.getElementById('daily-spark-btn').addEventListener('click', () => {
+    if (sparkDone) return;
+    navigateTo('active-workout', {
+      workout: buildSparkWorkout(todaySpark),
+      sparkContext: { sparkId: todaySpark.id, sparkDayKey: todaySpark.dayKey },
+    });
+  });
+
   document.getElementById('start-training-btn').addEventListener('click', () => {
     navigateTo('workouts');
   });
