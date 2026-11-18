@@ -230,7 +230,7 @@ function renderReady() {
 
       ${renderWorkplaceSetup()}
       ${renderPromptCard(set, { shuffle: true })}
-      ${renderStoryShapes(set, { interactive: true })}
+      ${renderStoryShapes(set)}
 
       <div class="card mb-16">
         <ul class="instructions-list">
@@ -311,7 +311,7 @@ function renderActive() {
       `}
 
       ${renderPromptCard(set)}
-      ${renderStoryShapes(set, { interactive: false })}
+      ${renderRecall(set)}
 
       ${isTongueTwister(set) ? `
         <div class="live-transcript-card">
@@ -1061,7 +1061,9 @@ async function handleActiveClick(e) {
   const action = e.target.closest('[data-action]');
   if (!action) return;
 
-  if (action.dataset.action === 'stop-timer') {
+  if (action.dataset.action === 'toggle-recall') {
+    toggleRecall(action);
+  } else if (action.dataset.action === 'stop-timer') {
     clearInterval(timerInterval);
     await completeSet();
   } else if (action.dataset.action === 'quit-workout') {
@@ -1192,21 +1194,75 @@ function renderPromptCard(set, { shuffle = false } = {}) {
   `;
 }
 
-function renderStoryShapes(set, { interactive }) {
+function renderRecall(set) {
+  const exercise = set.exercise;
+  if (!exercise) return '';
+  const structures = exercise.structures || [];
+  const instructions = exercise.instructions || [];
+  const selected = structures.find(s => s.id === set.storyStructureId)
+    || structures.find(s => s.landing)
+    || structures[0];
+  const landing = exercise.landing || '';
+
+  return `
+    <div class="recall">
+      <button type="button" class="recall-toggle" data-action="toggle-recall"
+        aria-expanded="false" aria-controls="recall-panel">
+        Recall technique
+      </button>
+      <div class="recall-panel" id="recall-panel" hidden>
+        <div class="recall-scroll">
+          ${structures.length ? `
+            <div class="recall-block">
+              <div class="label mb-8">Story shapes</div>
+              ${landing ? `<p class="story-shapes-landing">${escapeHtml(landing)}</p>` : ''}
+              ${structures.map(shape => `
+                <div class="story-shape is-static ${shape.id === selected?.id ? 'is-selected' : ''}">
+                  <span class="story-shape-name">
+                    ${escapeHtml(shape.name)}
+                    ${shape.id === selected?.id ? '<span class="story-shape-tag">Your pick</span>' : ''}
+                  </span>
+                  <span class="story-shape-beats">${escapeHtml(shape.beats.join(' → '))}</span>
+                  ${shape.id === selected?.id ? `<span class="story-shape-example">“${escapeHtml(shape.example)}”</span>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+          ${instructions.length ? `
+            <div class="recall-block">
+              <div class="label mb-8">The exercise</div>
+              <ul class="instructions-list">
+                ${instructions.map(step => `<li>${escapeHtml(step)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          ${exercise.tips ? `
+            <div class="tips-callout recall-tip">
+              <div class="tips-callout-title">Pro tip</div>
+              <div class="tips-callout-text">${escapeHtml(exercise.tips)}</div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleRecall(button) {
+  const panel = container?.querySelector('#recall-panel');
+  if (!panel) return;
+  const willOpen = panel.hasAttribute('hidden');
+  panel.toggleAttribute('hidden', !willOpen);
+  button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  button.textContent = willOpen ? 'Hide technique' : 'Recall technique';
+  if (willOpen) panel.scrollIntoView({ block: 'nearest' });
+}
+
+function renderStoryShapes(set) {
   const structures = set.exercise?.structures;
   if (!structures?.length) return '';
   const selected = structures.find(s => s.id === set.storyStructureId) || structures.find(s => s.landing) || structures[0];
   const landing = set.exercise.landing || 'Land the last line on something that changed within you.';
-
-  if (!interactive) {
-    return `
-      <div class="story-live">
-        <div class="story-live-kicker">Land it</div>
-        <div class="story-live-line">${escapeHtml(landing)}</div>
-        <div class="story-live-shape"><strong>${escapeHtml(selected.name)}.</strong> ${escapeHtml(selected.beats.join(' → '))}</div>
-      </div>
-    `;
-  }
 
   return `
     <div class="story-shapes">
