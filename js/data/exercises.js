@@ -19,6 +19,41 @@ export const CATEGORY_INFO = {
   [CATEGORIES.PERFORMANCE]: { label: 'Performance', icon: '🎭', color: '#F72585' },
 };
 
+/** Shown on Story Mode before and during the rep. */
+export const STORY_LANDING = 'Land the last line on something that changed within you — a belief, a habit, or how you see it now.';
+
+/**
+ * Example shapes for a quick story.
+ * Every shape ends on an inner change. The first one is the default.
+ */
+export const STORY_STRUCTURES = [
+  {
+    id: 'inner-change',
+    name: 'What changed in me',
+    landing: true,
+    beats: ['The moment you walked into', 'What actually happened', 'What shifted within you'],
+    example: 'I used to fill every silence. After that meeting I let the question sit, and I heard the real answer.',
+  },
+  {
+    id: 'status-struggle-shift',
+    name: 'Status, struggle, shift',
+    beats: ['How things stood', 'What made it hard', 'The turn, and who you were after'],
+    example: 'The launch looked fine. Then the client went quiet. I used to treat silence as success. Now I ask.',
+  },
+  {
+    id: 'wanted-but-so',
+    name: 'Wanted, but, so',
+    beats: ['Someone wanted something', 'But an obstacle showed up', 'So a choice was made', 'And it changed how you see it'],
+    example: 'I wanted the room to like the idea. They didn’t. So I told the customer’s story instead of mine — and I stopped performing and started showing.',
+  },
+  {
+    id: 'scene-and-meaning',
+    name: 'One scene, then the meaning',
+    beats: ['Drop into one concrete scene', 'One specific detail', 'Close on what it changed within you'],
+    example: 'The badge printer jammed on my first day. Nobody rushed me. I still give people that extra minute, because someone gave it to me.',
+  },
+];
+
 export const exercises = [
   // === WARMUP ===
   {
@@ -348,6 +383,38 @@ export const exercises = [
     tips: 'Every great story has conflict. Without tension, there\'s nothing to resolve. Make the audience feel what you felt.',
     defaultDuration: 180,
     metrics: ['narrative_arc', 'engagement', 'emotional_connection'],
+  },
+  {
+    id: 'story-mode',
+    name: 'Story Mode',
+    category: CATEGORIES.CONTENT,
+    description: 'A quick story. Pick a shape, tell the scene, and land on something that changed within you.',
+    instructions: [
+      'You have about a minute. Pick a story you can actually finish.',
+      'Glance at the shapes. Tap one if you want a rail to hold.',
+      'Put us in the scene — a person, a place, the turn.',
+      'Land the last line on something that changed within you. Not a lesson for the room. A shift inside.',
+    ],
+    prompts: [
+      'A time you changed your mind in front of other people.',
+      'The smallest moment from this year that you still replay.',
+      'A mistake you stopped explaining away.',
+      'A conversation that rearranged something you believed.',
+      'The day you noticed you were copying someone else.',
+      'A time you were kind when it cost you.',
+      'When you stopped trying to win, and something else happened.',
+      'A first day that did not go the way you rehearsed.',
+      'The compliment or the criticism you still hear.',
+      'A time you were wrong about someone.',
+      'When you finally said the thing you had been editing out.',
+      'A habit you dropped, and what grew in the space.',
+    ],
+    structures: STORY_STRUCTURES,
+    landing: STORY_LANDING,
+    tips: 'The plot is the setup. The point is the change. "And that\'s why teamwork matters" is a poster. "I stopped filling the silence" is a landing.',
+    defaultDuration: 90,
+    metrics: ['story_shape', 'specificity', 'inner_change'],
+    coaching: 'This is a quick-story drill called Story Mode. The speaker tells a short story and must land it on an internal change — something that changed within them: a belief, a habit, or a way of seeing — not a moral aimed at the audience and not a plot summary. Example shapes they may be using: what changed in me; status, struggle, shift; wanted / but / so; one scene then the meaning. Every shape is supposed to end on that inner change. Judge the scene (concrete who/where/detail), the turn, and whether the last line names what changed within them. Interpret structure as story shape, clarity as how specific the scene was, confidence as commitment to the landing, conciseness as finishing inside a short rep. Flag endings that stop on the event, poster morals ("and that\'s why teamwork matters"), and vague summaries with no scene. Do not ask them to be funnier. A sincere landing is the point.',
   },
   {
     id: 'concise-messaging',
@@ -720,6 +787,24 @@ export const exercises = [
     tips: 'The infomercial format is a comedy gift: manufactured problem, miracle solution, escalating bonuses. Commit like your rent depends on this pitch — the harder you sell, the funnier it gets.',
     defaultDuration: 120,
     metrics: ['commitment', 'structure', 'showmanship'],
+  },
+  {
+    id: 'banter',
+    name: 'Banter',
+    category: CATEGORIES.PERFORMANCE,
+    description: 'Set where you work and a few real details. Get a topic that might come up there, then land a funny story or a joke before the silence does.',
+    instructions: [
+      'Fill in where you work, your role, and details people there would recognize',
+      'You\'ll get a topic that could actually come up in that room',
+      'Take one breath — no preamble, no status update',
+      'Tell a short funny story or land a joke',
+      'Specific beats clever. A name, a place, the exact awkward bit. Then stop.',
+    ],
+    workplaceSetup: true,
+    tips: 'Banter is a gift, not a speech. If you explain the joke, you already missed it. Commit to the first funny picture that shows up.',
+    defaultDuration: 60,
+    metrics: ['speed', 'specificity', 'warmth'],
+    coaching: 'This is a workplace banter drill. The speaker set their real work environment, was handed a topic that might come up there, and had to respond immediately with either a short funny story or a joke. Judge speed (no long preamble), specificity (a name, place, or exact awkward detail), and whether it would land in a real break room — warm, brief, not a presentation. Interpret confidence as committing to the bit at once, structure as setup then payoff, clarity as how easy the joke or story was to follow, conciseness as stopping when the laugh line lands. Flag hedging, explaining the joke, status-update energy, and generic observations with no scene. Silliness is allowed. A clean one-liner is a complete rep.',
   },
 ];
 

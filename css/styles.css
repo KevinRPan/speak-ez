@@ -1640,6 +1640,127 @@ a {
   line-height: 1.5;
 }
 
+/* === BANTER WORKPLACE + STORY SHAPES === */
+.workplace-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 8px 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+}
+
+.workplace-hint,
+.story-shapes-landing {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.workplace-field {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 10px 0 6px;
+}
+
+.workplace-card .form-input {
+  margin-bottom: 4px;
+}
+
+.story-shapes {
+  margin: 8px 0 16px;
+  text-align: left;
+}
+
+.story-shape {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.story-shape.is-static {
+  cursor: default;
+}
+
+.story-shape.is-selected {
+  border-color: rgba(255, 107, 53, 0.55);
+  background: var(--accent-dim);
+}
+
+.story-shape-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+
+.story-shape-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(255, 107, 53, 0.12);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.story-shape-beats,
+.story-shape-example {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.story-shape-example {
+  margin-top: 6px;
+  color: var(--text);
+}
+
+.story-live {
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 8px 0 12px;
+  text-align: left;
+}
+
+.story-live-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.story-live-line {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.story-live-shape {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 /* === RECORDING TOGGLE === */
 .recording-toggle {
   display: flex;

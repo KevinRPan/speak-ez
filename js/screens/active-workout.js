@@ -5,8 +5,9 @@
 
 import { getWorkout, randomizeWarmups } from '../data/workouts.js';
 import { getExercise, getRandomPrompt, CATEGORY_INFO } from '../data/exercises.js';
+import { buildBanterPrompt, normalizeWorkplace } from '../data/banter.js';
 import { navigateTo } from '../lib/router.js';
-import { getSettings } from '../utils/storage.js';
+import { getSettings, loadAll, saveAll } from '../utils/storage.js';
 import { analyzeTranscript, getFillerRateScore, getPaceScore, getPaceLabel } from '../utils/transcript-analysis.js';
 
 let state = null;
@@ -35,6 +36,76 @@ function getInterviewContext() {
   return { position: settings.interviewPosition, level: settings.interviewLevel };
 }
 
+function getWorkplace() {
+  return normalizeWorkplace(getSettings().workEnvironment);
+}
+
+let workplaceSaveTimer = null;
+
+function sameWorkplace(a, b) {
+  return a.place === b.place && a.role === b.role && a.details === b.details;
+}
+
+function saveWorkplace(workplace) {
+  const store = loadAll();
+  store.settings.workEnvironment = normalizeWorkplace(workplace);
+  saveAll(store);
+}
+
+function retopicUpcomingBanter(workplace) {
+  if (!state || state.trackContext?.prompts?.length) return;
+  const avoid = [];
+  state.sets.forEach((set, index) => {
+    const pending = index >= state.currentIndex && set.exercise?.workplaceSetup;
+    if (!pending) {
+      if (set.promptKey) avoid.push(set.promptKey);
+      return;
+    }
+    const built = buildBanterPrompt(workplace, { avoidSparks: avoid });
+    set.prompt = built.text;
+    set.promptKey = built.spark;
+    avoid.push(built.spark);
+  });
+}
+
+function commitWorkplace(workplace) {
+  const next = normalizeWorkplace(workplace);
+  const prev = getWorkplace();
+  if (sameWorkplace(prev, next)) return next;
+  saveWorkplace(next);
+  retopicUpcomingBanter(next);
+  return next;
+}
+
+function scheduleWorkplaceSave(workplace) {
+  clearTimeout(workplaceSaveTimer);
+  workplaceSaveTimer = setTimeout(() => commitWorkplace(workplace), 300);
+}
+
+function flushWorkplaceFromDom() {
+  clearTimeout(workplaceSaveTimer);
+  const form = container?.querySelector('[data-workplace-form]');
+  if (!form) return getWorkplace();
+  return commitWorkplace({
+    place: form.querySelector('[data-field="place"]')?.value,
+    role: form.querySelector('[data-field="role"]')?.value,
+    details: form.querySelector('[data-field="details"]')?.value,
+  });
+}
+
+function assignPrompt(exercise, trackContext, avoidSparks) {
+  const tracked = pickTrackPrompt(trackContext);
+  if (tracked) return { prompt: tracked, promptKey: null };
+  if (exercise?.workplaceSetup) {
+    const built = buildBanterPrompt(getWorkplace(), { avoidSparks });
+    return { prompt: built.text, promptKey: built.spark };
+  }
+  return {
+    prompt: getRandomPrompt(exercise?.id, getInterviewContext()),
+    promptKey: null,
+  };
+}
+
 function pickTrackPrompt(trackContext) {
   const prompts = trackContext?.prompts;
   if (!prompts?.length) return null;
@@ -54,12 +125,18 @@ export function renderActiveWorkout(cont, data = {}) {
   // If custom exercises were passed (user swapped warmups), use those directly.
   // Daily Sparks keep their exact recipe; otherwise randomize warmup slots.
   const sets = [];
+  const usedSparks = [];
   const workoutExercises = data.customExercises
     ? data.customExercises
     : (workout.isDailySpark ? workout.exercises : randomizeWarmups(workout.exercises));
   workoutExercises.forEach((ex, exIndex) => {
     const exercise = getExercise(ex.exerciseId);
+    const storyStructureId = exercise?.structures?.find(s => s.landing)?.id
+      || exercise?.structures?.[0]?.id
+      || null;
     for (let s = 0; s < ex.sets; s++) {
+      const picked = assignPrompt(exercise, data.trackContext, usedSparks);
+      if (picked.promptKey) usedSparks.push(picked.promptKey);
       sets.push({
         exerciseId: ex.exerciseId,
         exercise,
@@ -68,7 +145,9 @@ export function renderActiveWorkout(cont, data = {}) {
         totalSets: ex.sets,
         duration: ex.duration,
         rest: ex.rest,
-        prompt: pickTrackPrompt(data.trackContext) || getRandomPrompt(ex.exerciseId, getInterviewContext()),
+        prompt: picked.prompt,
+        promptKey: picked.promptKey,
+        storyStructureId,
         rating: null,
         completed: false,
         recordingUrl: null,
@@ -149,12 +228,9 @@ function renderReady() {
         </div>
       </div>
 
-      ${set.prompt ? `
-        <div class="prompt-card">
-          <div class="prompt-text">${set.prompt}</div>
-          <button class="btn btn-ghost btn-sm mt-8" data-action="new-prompt">↻ Different prompt</button>
-        </div>
-      ` : ''}
+      ${renderWorkplaceSetup()}
+      ${renderPromptCard(set, { shuffle: true })}
+      ${renderStoryShapes(set, { interactive: true })}
 
       <div class="card mb-16">
         <ul class="instructions-list">
@@ -197,6 +273,7 @@ function renderReady() {
   `;
 
   container.onclick = handleReadyClick;
+  bindWorkplaceInputs();
 }
 
 function renderActive() {
@@ -233,11 +310,8 @@ function renderActive() {
         </div>
       `}
 
-      ${set.prompt ? `
-        <div class="prompt-card">
-          <div class="prompt-text">${set.prompt}</div>
-        </div>
-      ` : ''}
+      ${renderPromptCard(set)}
+      ${renderStoryShapes(set, { interactive: false })}
 
       ${isTongueTwister(set) ? `
         <div class="live-transcript-card">
@@ -538,7 +612,7 @@ async function requestReview() {
     const feedbackBody = { media: base64, mimeType, prompt: promptText };
     // Track projects with drill-specific coaching (acting, improv) get judged
     // on the drill's own terms; interview tailoring would be wrong there.
-    const coaching = state.trackContext?.coaching;
+    const coaching = state.trackContext?.coaching || set.exercise?.coaching;
     if (coaching) {
       feedbackBody.coachContext = coaching;
     } else {
@@ -943,6 +1017,11 @@ async function handleReadyClick(e) {
   if (!action) return;
   const type = action.dataset.action;
 
+  // Re-rendering drops the form. Save whatever is typed before that.
+  if (container?.querySelector('[data-workplace-form]')) {
+    flushWorkplaceFromDom();
+  }
+
   if (type === 'start-timer') {
     // Start recording if enabled
     if (recordingEnabled) {
@@ -963,9 +1042,15 @@ async function handleReadyClick(e) {
   } else if (type === 'skip-exercise') {
     advanceToNext();
   } else if (type === 'new-prompt') {
-    const set = state.sets[state.currentIndex];
-    set.prompt = pickTrackPrompt(state.trackContext) || getRandomPrompt(set.exerciseId, getInterviewContext()) || set.prompt;
+    refreshPrompt(state.sets[state.currentIndex]);
     renderCurrentState();
+  } else if (type === 'pick-structure') {
+    const set = state.sets[state.currentIndex];
+    const id = action.dataset.structure;
+    if (set.exercise?.structures?.some(s => s.id === id)) {
+      set.storyStructureId = id;
+      renderCurrentState();
+    }
   } else if (type === 'toggle-recording') {
     recordingEnabled = !recordingEnabled;
     renderCurrentState();
@@ -1045,12 +1130,114 @@ function formatTime(seconds) {
 }
 
 function getBadgeType(category) {
-  const map = { warmup: 'accent', vocal: 'purple', physical: 'blue', content: 'success' };
+  const map = { warmup: 'accent', vocal: 'purple', physical: 'blue', content: 'success', performance: 'pink' };
   return map[category] || 'accent';
+}
+
+function refreshPrompt(set) {
+  if (set.exercise?.workplaceSetup && !state.trackContext?.prompts?.length) {
+    const workplace = flushWorkplaceFromDom();
+    const avoidSparks = state.sets.map(s => s.promptKey).filter(Boolean);
+    const built = buildBanterPrompt(workplace, { avoidSparks });
+    set.prompt = built.text;
+    set.promptKey = built.spark;
+    return;
+  }
+  set.prompt = pickTrackPrompt(state.trackContext) || getRandomPrompt(set.exerciseId, getInterviewContext()) || set.prompt;
+}
+
+function bindWorkplaceInputs() {
+  const form = container?.querySelector('[data-workplace-form]');
+  if (!form) return;
+  form.querySelectorAll('[data-field]').forEach(input => {
+    input.addEventListener('input', () => {
+      scheduleWorkplaceSave({
+        place: form.querySelector('[data-field="place"]')?.value,
+        role: form.querySelector('[data-field="role"]')?.value,
+        details: form.querySelector('[data-field="details"]')?.value,
+      });
+    });
+  });
+}
+
+function renderWorkplaceSetup() {
+  const set = state.sets[state.currentIndex];
+  if (!set.exercise?.workplaceSetup) return '';
+  const w = getWorkplace();
+  return `
+    <div class="workplace-card" data-workplace-form>
+      <div class="label mb-8">Your work</div>
+      <p class="workplace-hint">Topics come from this. Specific details sound like your actual room.</p>
+      <label class="workplace-field" for="workplace-place">Where you work</label>
+      <input id="workplace-place" class="form-input" data-field="place" maxlength="120"
+        placeholder="a night-shift ER, a hybrid design studio" value="${escapeAttr(w.place)}" />
+      <label class="workplace-field" for="workplace-role">Your role</label>
+      <input id="workplace-role" class="form-input" data-field="role" maxlength="80"
+        placeholder="nurse, designer, teacher" value="${escapeAttr(w.role)}" />
+      <label class="workplace-field" for="workplace-details">Details people there would recognize</label>
+      <textarea id="workplace-details" class="form-input" data-field="details" rows="2" maxlength="240"
+        placeholder="the broken coffee machine, Friday deploys, parent pickup">${escapeHtml(w.details)}</textarea>
+    </div>
+  `;
+}
+
+function renderPromptCard(set, { shuffle = false } = {}) {
+  if (!set.prompt) return '';
+  const shuffleLabel = set.exercise?.workplaceSetup ? '↻ New topic' : '↻ Different prompt';
+  return `
+    <div class="prompt-card">
+      <div class="prompt-text">${escapeHtml(set.prompt)}</div>
+      ${shuffle ? `<button type="button" class="btn btn-ghost btn-sm mt-8" data-action="new-prompt">${shuffleLabel}</button>` : ''}
+    </div>
+  `;
+}
+
+function renderStoryShapes(set, { interactive }) {
+  const structures = set.exercise?.structures;
+  if (!structures?.length) return '';
+  const selected = structures.find(s => s.id === set.storyStructureId) || structures.find(s => s.landing) || structures[0];
+  const landing = set.exercise.landing || 'Land the last line on something that changed within you.';
+
+  if (!interactive) {
+    return `
+      <div class="story-live">
+        <div class="story-live-kicker">Land it</div>
+        <div class="story-live-line">${escapeHtml(landing)}</div>
+        <div class="story-live-shape"><strong>${escapeHtml(selected.name)}.</strong> ${escapeHtml(selected.beats.join(' → '))}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="story-shapes">
+      <div class="label mb-8">Story shapes</div>
+      <p class="story-shapes-landing">${escapeHtml(landing)}</p>
+      ${structures.map(shape => {
+        const isSelected = shape.id === selected.id;
+        return `
+          <button type="button" class="story-shape ${isSelected ? 'is-selected' : ''}"
+            data-action="pick-structure" data-structure="${shape.id}"
+            aria-pressed="${isSelected ? 'true' : 'false'}">
+            <span class="story-shape-name">
+              ${escapeHtml(shape.name)}
+              ${shape.landing ? '<span class="story-shape-tag">Start here</span>' : ''}
+            </span>
+            <span class="story-shape-beats">${escapeHtml(shape.beats.join(' → '))}</span>
+            ${isSelected ? `<span class="story-shape-example">“${escapeHtml(shape.example)}”</span>` : ''}
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
 }
 
 export function cleanupActiveWorkout() {
   clearInterval(timerInterval);
+  clearTimeout(workplaceSaveTimer);
   stopAndCleanupRecording();
   state = null;
 }
