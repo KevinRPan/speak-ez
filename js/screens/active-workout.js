@@ -278,7 +278,6 @@ function renderReady() {
 
 function renderActive() {
   const set = state.sets[state.currentIndex];
-  const catInfo = CATEGORY_INFO[set.exercise.category];
   const progress = state.currentIndex / state.sets.length;
 
   container.innerHTML = `
@@ -302,17 +301,8 @@ function renderActive() {
             REC
           </div>
         </div>
-        <div class="exercise-display exercise-display-compact">
-          <div class="exercise-display-name">${set.exercise.name}</div>
-          <div class="exercise-display-set">Set ${set.setNumber} of ${set.totalSets}</div>
-        </div>
-      ` : `
-        <div class="exercise-display">
-          <div class="exercise-display-icon">${catInfo.icon}</div>
-          <div class="exercise-display-name">${set.exercise.name}</div>
-          <div class="exercise-display-set">Set ${set.setNumber} of ${set.totalSets}</div>
-        </div>
-      `}
+        ${renderExerciseIdentity(set, { compact: true })}
+      ` : renderExerciseIdentity(set)}
 
       ${renderPromptCard(set)}
       ${renderRecall(set)}
@@ -1198,6 +1188,19 @@ function renderPromptCard(set, { shuffle = false } = {}) {
   `;
 }
 
+function renderExerciseIdentity(set, { compact = false } = {}) {
+  const catInfo = CATEGORY_INFO[set.exercise.category];
+  const description = set.exercise.description || '';
+  return `
+    <div class="exercise-display ${compact ? 'exercise-display-compact' : ''}">
+      ${compact ? '' : `<div class="exercise-display-icon">${catInfo.icon}</div>`}
+      <div class="exercise-display-name">${escapeHtml(set.exercise.name)}</div>
+      <div class="exercise-display-set">Set ${set.setNumber} of ${set.totalSets}</div>
+      ${description ? `<p class="exercise-display-desc">${escapeHtml(description)}</p>` : ''}
+    </div>
+  `;
+}
+
 function renderRecall(set) {
   const exercise = set.exercise;
   if (!exercise) return '';
@@ -1212,17 +1215,13 @@ function renderRecall(set) {
     <div class="recall">
       <button type="button" class="recall-toggle" data-action="toggle-recall"
         aria-expanded="false" aria-controls="recall-panel">
-        What am I doing?
+        Remind me
       </button>
       <div class="recall-panel" id="recall-panel" hidden>
         <div class="recall-scroll">
-          <div class="recall-block">
-            <div class="recall-name">${escapeHtml(exercise.name)}</div>
-            ${exercise.description ? `<p class="recall-desc">${escapeHtml(exercise.description)}</p>` : ''}
-          </div>
           ${structures.length ? `
             <div class="recall-block">
-              <div class="label mb-8">Story shapes</div>
+              <div class="label mb-8">Shapes</div>
               ${landing ? `<p class="story-shapes-landing">${escapeHtml(landing)}</p>` : ''}
               ${structures.map(shape => `
                 <div class="story-shape is-static ${shape.id === selected?.id ? 'is-selected' : ''}">
@@ -1238,7 +1237,7 @@ function renderRecall(set) {
           ` : ''}
           ${instructions.length ? `
             <div class="recall-block">
-              <div class="label mb-8">The exercise</div>
+              <div class="label mb-8">Steps</div>
               <ul class="instructions-list">
                 ${instructions.map(step => `<li>${escapeHtml(step)}</li>`).join('')}
               </ul>
@@ -1262,7 +1261,7 @@ function toggleRecall(button) {
   const willOpen = panel.hasAttribute('hidden');
   panel.toggleAttribute('hidden', !willOpen);
   button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-  button.textContent = willOpen ? 'Hide' : 'What am I doing?';
+  button.textContent = willOpen ? 'Hide reminder' : 'Remind me';
   if (willOpen) panel.scrollIntoView({ block: 'nearest' });
 }
 

@@ -851,16 +851,20 @@ a {
   margin-bottom: 8px;
 }
 
-.recall-name {
-  font-weight: 700;
-  font-size: 0.95rem;
+.exercise-display-set:has(+ .exercise-display-desc) {
+  margin-bottom: 6px;
 }
 
-.recall-desc {
-  margin-top: 4px;
-  font-size: 0.85rem;
-  line-height: 1.45;
+.exercise-display-desc {
+  font-size: 0.95rem;
+  line-height: 1.4;
   color: var(--text-secondary);
+  max-width: 22rem;
+  margin: 0 auto 4px;
+}
+
+.exercise-display-compact .exercise-display-desc {
+  font-size: 0.85rem;
 }
 
 .timer-display {
@@ -1756,23 +1760,19 @@ a {
 }
 
 .recall {
-  margin: 4px 0 8px;
+  margin: 0 0 4px;
+  text-align: center;
 }
 
 .recall-toggle {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: 0.85rem;
+  padding: 6px 10px 8px;
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
 .recall-toggle[aria-expanded="true"] {
-  color: var(--text);
-  border-style: solid;
-  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
