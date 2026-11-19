@@ -109,6 +109,32 @@ function renderExerciseDetail(container, exercise, goBack) {
         </div>
       ` : ''}
 
+      ${exercise.workplaceSetup ? `
+        <div class="card mb-16">
+          <div class="label mb-12">Before you start</div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+            You’ll set where you work, your role, and a few details people there would recognize. Each rep hands you a topic that might come up in that room. Your move is a funny story or a joke — quickly.
+          </div>
+        </div>
+      ` : ''}
+
+      ${exercise.structures?.length ? `
+        <div class="card mb-16">
+          <div class="label mb-12">Story shapes</div>
+          ${exercise.landing ? `<p class="story-shapes-landing">${exercise.landing}</p>` : ''}
+          ${exercise.structures.map(shape => `
+            <div class="story-shape is-static ${shape.landing ? 'is-selected' : ''}">
+              <span class="story-shape-name">
+                ${shape.name}
+                ${shape.landing ? '<span class="story-shape-tag">Start here</span>' : ''}
+              </span>
+              <span class="story-shape-beats">${shape.beats.join(' → ')}</span>
+              <span class="story-shape-example">“${shape.example}”</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
       ${exercise.prompts ? `
         <div class="card mb-16">
           <div class="label mb-12">Sample prompts</div>
@@ -132,19 +158,34 @@ function renderExerciseDetail(container, exercise, goBack) {
         </div>
       </div>
 
-      <div class="card card-sm">
+      <div class="card card-sm mb-16">
         <div class="flex items-center justify-between">
           <span class="label">Tracks</span>
           <span style="font-size: 0.85rem; color: var(--text-secondary);">${exercise.metrics.join(', ')}</span>
         </div>
       </div>
+
+      <button type="button" class="btn btn-primary btn-lg btn-block" data-action="practice">
+        Practice this
+      </button>
     </div>
   `;
 
   container.onclick = (e) => {
     const action = e.target.closest('[data-action]');
-    if (action?.dataset.action === 'back') {
+    if (!action) return;
+    if (action.dataset.action === 'back') {
       goBack();
+    } else if (action.dataset.action === 'practice') {
+      navigateTo('active-workout', {
+        workout: {
+          id: `exercise-${exercise.id}`,
+          name: exercise.name,
+          icon: catInfo.icon,
+          color: catInfo.color,
+          exercises: [{ exerciseId: exercise.id, sets: 1, duration: exercise.defaultDuration, rest: 0 }],
+        },
+      });
     }
   };
 }
