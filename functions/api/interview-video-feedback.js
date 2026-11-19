@@ -9,6 +9,8 @@
  * 3) Generate a dynamic next follow-up question for multi-turn practice
  */
 
+import { geminiAnswerText, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
+
 const TRANSCRIBE_PROMPT = `You are a precise transcription engine.
 
 Transcribe the spoken content from the provided media file.
@@ -414,14 +416,11 @@ function weightGuidanceText(weights) {
 }
 
 async function callGemini({ apiKey, contents, generationConfig, jsonHeaders }) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents, generationConfig }),
-    }
-  );
+  const response = await fetch(geminiGenerateUrl(apiKey), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(geminiRequestBody(contents, generationConfig)),
+  });
 
   if (!response.ok) {
     const errBody = await response.text();
@@ -435,7 +434,7 @@ async function callGemini({ apiKey, contents, generationConfig, jsonHeaders }) {
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text = geminiAnswerText(data);
 
   try {
     return { parsed: JSON.parse(text) };

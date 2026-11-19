@@ -7,6 +7,8 @@
  * Returns structured feedback via Gemini with per-criterion scores.
  */
 
+import { geminiAnswerText, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -81,14 +83,11 @@ Provide your evaluation as JSON only.`;
       responseMimeType: 'application/json',
     };
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents, generationConfig }),
-      }
-    );
+    const geminiResponse = await fetch(geminiGenerateUrl(apiKey), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiRequestBody(contents, generationConfig)),
+    });
 
     if (!geminiResponse.ok) {
       const errBody = await geminiResponse.text();
@@ -100,7 +99,7 @@ Provide your evaluation as JSON only.`;
     }
 
     const geminiData = await geminiResponse.json();
-    const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = geminiAnswerText(geminiData);
 
     try {
       const feedback = JSON.parse(text);

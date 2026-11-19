@@ -9,6 +9,8 @@
  * - Provides final summary feedback when isComplete is true
  */
 
+import { geminiAnswerText, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
+
 const QA_SYSTEM_PROMPT = `You are role-playing in a communication practice scenario. Here is the situation:
 
 SCENARIO: "{{SCENARIO_CONTEXT}}"
@@ -122,14 +124,11 @@ export async function onRequestPost(context) {
       responseMimeType: 'application/json',
     };
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents, generationConfig }),
-      }
-    );
+    const geminiResponse = await fetch(geminiGenerateUrl(apiKey), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiRequestBody(contents, generationConfig)),
+    });
 
     if (!geminiResponse.ok) {
       const errBody = await geminiResponse.text();
@@ -141,7 +140,7 @@ export async function onRequestPost(context) {
     }
 
     const geminiData = await geminiResponse.json();
-    const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = geminiAnswerText(geminiData);
 
     try {
       const parsed = JSON.parse(text);
