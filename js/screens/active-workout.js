@@ -302,6 +302,10 @@ function renderActive() {
             REC
           </div>
         </div>
+        <div class="exercise-display exercise-display-compact">
+          <div class="exercise-display-name">${set.exercise.name}</div>
+          <div class="exercise-display-set">Set ${set.setNumber} of ${set.totalSets}</div>
+        </div>
       ` : `
         <div class="exercise-display">
           <div class="exercise-display-icon">${catInfo.icon}</div>
@@ -1208,10 +1212,14 @@ function renderRecall(set) {
     <div class="recall">
       <button type="button" class="recall-toggle" data-action="toggle-recall"
         aria-expanded="false" aria-controls="recall-panel">
-        Recall technique
+        What am I doing?
       </button>
       <div class="recall-panel" id="recall-panel" hidden>
         <div class="recall-scroll">
+          <div class="recall-block">
+            <div class="recall-name">${escapeHtml(exercise.name)}</div>
+            ${exercise.description ? `<p class="recall-desc">${escapeHtml(exercise.description)}</p>` : ''}
+          </div>
           ${structures.length ? `
             <div class="recall-block">
               <div class="label mb-8">Story shapes</div>
@@ -1254,7 +1262,7 @@ function toggleRecall(button) {
   const willOpen = panel.hasAttribute('hidden');
   panel.toggleAttribute('hidden', !willOpen);
   button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-  button.textContent = willOpen ? 'Hide technique' : 'Recall technique';
+  button.textContent = willOpen ? 'Hide' : 'What am I doing?';
   if (willOpen) panel.scrollIntoView({ block: 'nearest' });
 }
 

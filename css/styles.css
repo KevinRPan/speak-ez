@@ -838,6 +838,31 @@ a {
   margin-bottom: 20px;
 }
 
+.exercise-display-compact {
+  padding: 8px 0 0;
+}
+
+.exercise-display-compact .exercise-display-name {
+  font-size: 1.15rem;
+  margin-bottom: 2px;
+}
+
+.exercise-display-compact .exercise-display-set {
+  margin-bottom: 8px;
+}
+
+.recall-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.recall-desc {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
 .timer-display {
   font-size: 4rem;
   font-weight: 800;
