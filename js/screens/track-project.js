@@ -6,6 +6,7 @@
 
 import { getTrackProject, buildProjectWorkout } from '../data/tracks.js';
 import { getProjectProgress, getChecklistStats, getMonitorAreas } from '../utils/track-progress.js';
+import { touchCourse } from '../utils/practice-focus.js';
 import { navigateTo } from '../lib/router.js';
 import { flowBar } from '../ui/chrome.js';
 
@@ -130,6 +131,7 @@ export function renderTrackProject(container, data = {}) {
   });
 
   document.getElementById('start-rep-btn').addEventListener('click', () => {
+    touchCourse(track.id);
     navigateTo('active-workout', {
       workout: buildProjectWorkout(track, project),
       trackContext: {

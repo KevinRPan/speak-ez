@@ -5,6 +5,7 @@
 import { exercises, CATEGORIES, CATEGORY_INFO } from '../data/exercises.js';
 import { navigateTo } from '../lib/router.js';
 import { flowBar, pageHeader } from '../ui/chrome.js';
+import { buildPinnedWorkout, isExercisePinned, togglePin } from '../utils/practice-focus.js';
 
 export function renderExercises(container) {
   let activeCategory = null;
@@ -42,12 +43,17 @@ export function renderExercises(container) {
         <div class="exercise-list">
           ${filtered.map(ex => {
             const catInfo = CATEGORY_INFO[ex.category];
+            const pinned = isExercisePinned(ex.id);
             return `
               <div class="card card-interactive exercise-lib-card" data-action="view-exercise" data-id="${ex.id}">
                 <div class="exercise-lib-header">
                   <div class="exercise-lib-dot" style="background: ${catInfo.color};"></div>
                   <div class="exercise-lib-name">${ex.name}</div>
                   <span class="badge badge-${getBadgeType(ex.category)}">${catInfo.label}</span>
+                  <button class="pin-btn ${pinned ? 'is-pinned' : ''}" type="button"
+                    data-action="toggle-pin" data-id="${ex.id}" aria-pressed="${pinned ? 'true' : 'false'}">
+                    ${pinned ? 'Pinned' : 'Pin'}
+                  </button>
                 </div>
                 <div class="exercise-lib-desc">${ex.description}</div>
               </div>
@@ -67,6 +73,9 @@ export function renderExercises(container) {
       } else if (type === 'filter') {
         activeCategory = action.dataset.category || null;
         render();
+      } else if (type === 'toggle-pin') {
+        togglePin(action.dataset.id);
+        render();
       } else if (type === 'view-exercise') {
         const ex = exercises.find(e => e.id === action.dataset.id);
         if (ex) renderExerciseDetail(container, ex, render);
@@ -79,6 +88,7 @@ export function renderExercises(container) {
 
 function renderExerciseDetail(container, exercise, goBack) {
   const catInfo = CATEGORY_INFO[exercise.category];
+  const pinned = isExercisePinned(exercise.id);
 
   container.innerHTML = `
     <div class="screen">
@@ -165,6 +175,9 @@ function renderExerciseDetail(container, exercise, goBack) {
         </div>
       </div>
 
+      <button class="btn btn-secondary btn-block mb-8" type="button" data-action="toggle-pin" aria-pressed="${pinned ? 'true' : 'false'}">
+        ${pinned ? 'Pinned · showing on Home' : 'Pin to Home'}
+      </button>
       <button type="button" class="btn btn-primary btn-lg btn-block" data-action="practice">
         Practice this
       </button>
@@ -176,16 +189,12 @@ function renderExerciseDetail(container, exercise, goBack) {
     if (!action) return;
     if (action.dataset.action === 'back') {
       goBack();
+    } else if (action.dataset.action === 'toggle-pin') {
+      togglePin(exercise.id);
+      renderExerciseDetail(container, exercise, goBack);
     } else if (action.dataset.action === 'practice') {
-      navigateTo('active-workout', {
-        workout: {
-          id: `exercise-${exercise.id}`,
-          name: exercise.name,
-          icon: catInfo.icon,
-          color: catInfo.color,
-          exercises: [{ exerciseId: exercise.id, sets: 1, duration: exercise.defaultDuration, rest: 0 }],
-        },
-      });
+      const workout = buildPinnedWorkout(exercise);
+      navigateTo('active-workout', { workout, customExercises: workout.exercises });
     }
   };
 }

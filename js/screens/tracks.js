@@ -3,13 +3,14 @@
  */
 
 import { TRACKS, getTrackProjectCount } from '../data/tracks.js';
-import { getTrackProgressMap, getTrackSummary, getContinueTarget } from '../utils/track-progress.js';
+import { getTrackProgressMap, getTrackSummary } from '../utils/track-progress.js';
+import { getContinueItems, isCourseStarted } from '../utils/practice-focus.js';
 import { navigateTo } from '../lib/router.js';
 import { pageHeader } from '../ui/chrome.js';
 
 export function renderTracks(container) {
   const progressMap = getTrackProgressMap();
-  const continueTarget = getContinueTarget(progressMap);
+  const continueTarget = getContinueItems(progressMap).find(item => item.kind === 'course') || null;
 
   container.innerHTML = `
     <div class="screen">
@@ -44,12 +45,18 @@ export function renderTracks(container) {
           ${TRACKS.map(track => {
             const summary = getTrackSummary(track, progressMap);
             const total = getTrackProjectCount(track);
+            const started = isCourseStarted(track.id, progressMap);
+            const complete = summary.total > 0 && summary.completed === summary.total;
+            const status = complete ? 'Complete' : (started ? 'In progress' : '');
             return `
               <div class="card card-interactive track-card" data-track="${track.id}">
                 <div class="track-card-top">
                   <div class="track-card-icon" style="background: ${track.color}20;">${track.icon}</div>
                   <div class="track-card-info">
-                    <div class="track-card-name">${track.name}</div>
+                    <div class="track-card-name-row">
+                      <div class="track-card-name">${track.name}</div>
+                      ${status ? `<span class="track-status-chip">${status}</span>` : ''}
+                    </div>
                     <div class="track-card-tagline">${track.tagline}</div>
                   </div>
                 </div>
