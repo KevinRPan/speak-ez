@@ -138,6 +138,13 @@ export function renderHome(container) {
         <div class="section-header">
           <span class="label">Pick a flow</span>
         </div>
+        <button class="isolation-entry" type="button" id="start-isolation-btn">
+          <span class="flow-card-icon" aria-hidden="true">🎧</span>
+          <span class="isolation-entry-copy">
+            <span class="flow-card-name">Isolation</span>
+            <span class="flow-card-desc">Five minutes on one topic. Then ears, eyes, and the words, one at a time.</span>
+          </span>
+        </button>
         <div class="flow-grid">
           <button class="flow-card" type="button" data-flow="workouts">
             <span class="flow-card-icon" aria-hidden="true">🏋️</span>
@@ -271,6 +278,10 @@ export function renderHome(container) {
 
   document.getElementById('start-training-btn').addEventListener('click', () => {
     navigateTo('workouts');
+  });
+
+  document.getElementById('start-isolation-btn').addEventListener('click', () => {
+    navigateTo('isolation');
   });
 
   container.querySelectorAll('[data-flow]').forEach(card => {

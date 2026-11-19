@@ -11,6 +11,7 @@ import { getLevelInfo, getWeeklyCount, getDisplayStreak } from '../utils/xp.js';
 import { generateInsight } from '../utils/recommendations.js';
 import { navigateTo } from '../lib/router.js';
 import { flowBar, pageHeader } from '../ui/chrome.js';
+import { isolationLogCard, isolationMeta } from '../ui/isolation-log.js';
 
 const SCORE_CATEGORIES = [
   { key: 'clarity',     label: 'Clarity',     color: '#00B4D8' },
@@ -223,8 +224,10 @@ function renderLog(history) {
             <div class="history-info">
               <div class="history-name">${session.workoutName}</div>
               <div class="history-meta">
-                ${formatDate(session.completedAt)} · ${Math.round(session.totalDuration / 60)} min · ${session.setsCompleted}/${session.totalSets} sets
-                ${session.totalFillerCount != null ? ` · ${session.totalFillerCount} fillers` : ''}
+                ${formatDate(session.completedAt)} · ${session.type === 'isolation'
+                  ? isolationMeta(session)
+                  : `${Math.round(session.totalDuration / 60)} min · ${session.setsCompleted}/${session.totalSets} sets`}
+                ${session.type !== 'isolation' && session.totalFillerCount != null ? ` · ${session.totalFillerCount} fillers` : ''}
               </div>
             </div>
             <div class="history-right">
@@ -303,6 +306,7 @@ function renderSessionDetail(container, session) {
         </div>
       ` : ''}
 
+      ${session.type === 'isolation' ? isolationLogCard(session) : `
       <div class="card mb-16">
         <div class="label mb-12">Exercises</div>
         ${session.exercises.map(ex => `
@@ -317,6 +321,7 @@ function renderSessionDetail(container, session) {
           </div>
         `).join('')}
       </div>
+      `}
 
       <div class="card card-sm">
         <div class="flex items-center justify-between">
