@@ -29,6 +29,7 @@ export const defaults = {
     notifications: false,
     interviewPosition: '',
     interviewLevel: '',
+    workEnvironment: { place: '', role: '', details: '' },
   },
 };
 

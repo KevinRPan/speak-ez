@@ -204,6 +204,32 @@ export const TRACKS = [
           },
         ],
       },
+      {
+        name: 'Tell It in a Minute',
+        projects: [
+          {
+            id: 'quick-story',
+            name: 'Story Mode',
+            icon: '✨',
+            objective: 'Tell a quick story and land the last line on something that changed within you — a belief, a habit, or how you see it now.',
+            exerciseId: 'story-mode',
+            repsRequired: 3,
+            duration: 90,
+            durationLabel: '90 sec',
+            coaching: 'This is a quick-story drill called Story Mode. The speaker tells a short story and must land it on an internal change — something that changed within them: a belief, a habit, or a way of seeing — not a moral aimed at the audience and not a plot summary. Example shapes they may be using: what changed in me; status, struggle, shift; wanted / but / so; one scene then the meaning. Every shape is supposed to end on that inner change. Judge the scene (concrete who/where/detail), the turn, and whether the last line names what changed within them. Interpret structure as story shape, clarity as how specific the scene was, confidence as commitment to the landing, conciseness as finishing inside a short rep. Flag endings that stop on the event, poster morals ("and that\'s why teamwork matters"), and vague summaries with no scene. Do not ask them to be funnier. A sincere landing is the point.',
+            checklist: [
+              'Opened inside a scene, not a summary',
+              'Included one concrete detail — a person, a place, or a line',
+              'Had a turn — something shifted',
+              'Last line named what changed within you',
+            ],
+            watchFor: [
+              'Ending on the event with no inner change',
+              'A moral aimed at the audience ("and that\'s why you should...")',
+            ],
+          },
+        ],
+      },
     ],
   },
 
@@ -826,6 +852,32 @@ export const TRACKS = [
             watchFor: [
               'Sincerity cracking when the product gets silly',
               'Forgetting to actually ask for the sale',
+            ],
+          },
+        ],
+      },
+      {
+        name: 'In the Room',
+        projects: [
+          {
+            id: 'break-room-banter',
+            name: 'Banter',
+            icon: '☕',
+            objective: 'Set your real workplace, take a topic that might come up there, and answer with a funny story or a joke — fast.',
+            exerciseId: 'banter',
+            repsRequired: 3,
+            duration: 60,
+            durationLabel: '60 sec',
+            coaching: 'This is a workplace banter drill. The speaker set their real work environment, was handed a topic that might come up there, and had to respond immediately with either a short funny story or a joke. Judge speed (no long preamble), specificity (a name, place, or exact awkward detail), and whether it would land in a real break room — warm, brief, not a presentation. Interpret confidence as committing to the bit at once, structure as setup then payoff, clarity as how easy the joke or story was to follow, conciseness as stopping when the laugh line lands. Flag hedging, explaining the joke, status-update energy, and generic observations with no scene. Silliness is allowed. A clean one-liner is a complete rep.',
+            checklist: [
+              'Responded within a breath — no long windup',
+              'Story or joke used a specific, real-feeling detail',
+              'Would land in a break room: warm, brief, not a speech',
+              'Committed to the bit instead of explaining it',
+            ],
+            watchFor: [
+              'Explaining why it was funny',
+              'Generic small talk with no scene',
             ],
           },
         ],

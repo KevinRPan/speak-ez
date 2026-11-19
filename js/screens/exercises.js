@@ -119,6 +119,32 @@ function renderExerciseDetail(container, exercise, goBack) {
         </div>
       ` : ''}
 
+      ${exercise.workplaceSetup ? `
+        <div class="card mb-16">
+          <div class="label mb-12">Before you start</div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+            You’ll set where you work, your role, and a few details people there would recognize. Each rep hands you a topic that might come up in that room. Your move is a funny story or a joke — quickly.
+          </div>
+        </div>
+      ` : ''}
+
+      ${exercise.structures?.length ? `
+        <div class="card mb-16">
+          <div class="label mb-12">Story shapes</div>
+          ${exercise.landing ? `<p class="story-shapes-landing">${exercise.landing}</p>` : ''}
+          ${exercise.structures.map(shape => `
+            <div class="story-shape is-static ${shape.landing ? 'is-selected' : ''}">
+              <span class="story-shape-name">
+                ${shape.name}
+                ${shape.landing ? '<span class="story-shape-tag">Start here</span>' : ''}
+              </span>
+              <span class="story-shape-beats">${shape.beats.join(' → ')}</span>
+              <span class="story-shape-example">“${shape.example}”</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
       ${exercise.prompts ? `
         <div class="card mb-16">
           <div class="label mb-12">Sample prompts</div>
@@ -149,10 +175,10 @@ function renderExerciseDetail(container, exercise, goBack) {
         </div>
       </div>
 
-      <button class="btn ${pinned ? 'btn-secondary' : 'btn-primary'} btn-block mb-8" type="button" data-action="toggle-pin" aria-pressed="${pinned ? 'true' : 'false'}">
+      <button class="btn btn-secondary btn-block mb-8" type="button" data-action="toggle-pin" aria-pressed="${pinned ? 'true' : 'false'}">
         ${pinned ? 'Pinned · showing on Home' : 'Pin to Home'}
       </button>
-      <button class="btn btn-secondary btn-block" type="button" data-action="practice">
+      <button type="button" class="btn btn-primary btn-lg btn-block" data-action="practice">
         Practice this
       </button>
     </div>

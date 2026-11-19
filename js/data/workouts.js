@@ -44,6 +44,19 @@ export const workoutTemplates = [
     ],
   },
   {
+    id: 'break-room',
+    name: 'Break Room',
+    description: 'Topics from your actual workplace, then a quick story that lands on what changed within you.',
+    duration: 8,
+    difficulty: 'beginner',
+    icon: '☕',
+    color: '#FDCB6E',
+    exercises: [
+      { exerciseId: 'banter', sets: 3, duration: 60, rest: 15 },
+      { exerciseId: 'story-mode', sets: 2, duration: 90, rest: 15 },
+    ],
+  },
+  {
     id: 'interview-prep',
     name: 'Interview Prep',
     description: 'Nail structured responses, stay concise, and eliminate fillers.',
