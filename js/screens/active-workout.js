@@ -56,7 +56,7 @@ export function renderActiveWorkout(cont, data = {}) {
   const sets = [];
   const workoutExercises = data.customExercises
     ? data.customExercises
-    : (workout.isDailySpark ? workout.exercises : randomizeWarmups(workout.exercises));
+    : (workout.isDailySpark || workout.preserveExercises ? workout.exercises : randomizeWarmups(workout.exercises));
   workoutExercises.forEach((ex, exIndex) => {
     const exercise = getExercise(ex.exerciseId);
     for (let s = 0; s < ex.sets; s++) {

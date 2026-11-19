@@ -10,7 +10,9 @@ import { navigateTo } from '../lib/router.js';
 import { pageHeader } from '../ui/chrome.js';
 import { getActiveCourse } from '../utils/curriculum-progress.js';
 import { getRecommendation } from '../utils/recommendations.js';
-import { getContinueTarget } from '../utils/track-progress.js';
+import { buildPinnedWorkout, getContinueItems } from '../utils/practice-focus.js';
+import { getProjectProgress } from '../utils/track-progress.js';
+import { CATEGORY_INFO } from '../data/exercises.js';
 import {
   getTodaySpark,
   buildSparkWorkout,
@@ -28,7 +30,8 @@ export function renderHome(container) {
   const displayStreak = getDisplayStreak(user.lastPracticeDate, user.streak);
   const activeCourse = getActiveCourse(history);
   const recommendation = getRecommendation(history);
-  const trackTarget = getContinueTarget();
+  const continueItems = getContinueItems(undefined, { limit: 4 });
+  const lead = continueItems[0] || null;
   const todaySpark = getTodaySpark();
   const sparkDone = isSparkCompletedToday(history, todaySpark);
   const sparkWeekDays = getSparkDaysThisWeek(history);
@@ -58,7 +61,7 @@ export function renderHome(container) {
       ${pageHeader({
         kicker: 'Today',
         title: greeting,
-        subtitle: 'Ready to train?',
+        subtitle: lead ? continueActionLabel(lead) : 'Ready to train?',
       })}
 
       <div class="stat-row">
@@ -96,6 +99,23 @@ export function renderHome(container) {
         <div class="level-xp-text">${level.title} — ${user.xp} XP${level.next ? ` / ${level.next.xp} XP` : ''}</div>
       </div>
 
+      ${lead ? `
+        <div class="section">
+          <div class="section-header">
+            <span class="label">Continue</span>
+          </div>
+          <div class="continue-list" id="continue-list">
+            ${continueItems.map((item, index) => continueCard(item, index)).join('')}
+          </div>
+        </div>
+
+        <div class="cta-section section">
+          <button class="btn btn-primary btn-block" id="start-training-btn">
+            ${continueActionLabel(lead)}
+          </button>
+        </div>
+      ` : ''}
+
       <div class="section">
         <div class="section-header">
           <span class="label">Daily Spark</span>
@@ -128,11 +148,13 @@ export function renderHome(container) {
         </button>
       </div>
 
-      <div class="cta-section section">
-        <button class="btn btn-primary btn-block" id="start-training-btn">
-          Start Training
-        </button>
-      </div>
+      ${lead ? '' : `
+        <div class="cta-section section">
+          <button class="btn btn-primary btn-block" id="start-training-btn">
+            Start Training
+          </button>
+        </div>
+      `}
 
       <div class="section">
         <div class="section-header">
@@ -159,10 +181,15 @@ export function renderHome(container) {
             <span class="flow-card-name">Interview</span>
             <span class="flow-card-desc">Drills, custom rounds, and uploads</span>
           </button>
+          <button class="flow-card" type="button" data-flow="exercises">
+            <span class="flow-card-icon" aria-hidden="true">🎯</span>
+            <span class="flow-card-name">Exercises</span>
+            <span class="flow-card-desc">Browse drills and pin the ones you want</span>
+          </button>
         </div>
       </div>
 
-      ${activeCourse ? `
+      ${!lead && activeCourse ? `
         <div class="section">
           <div class="section-header">
             <span class="label">Your Focus</span>
@@ -196,31 +223,21 @@ export function renderHome(container) {
         </div>
       ` : ''}
 
-      <div class="section">
-        <div class="section-header">
-          <span class="label">Continue</span>
-        </div>
-        ${trackTarget ? `
-          <div class="card card-interactive track-continue-card" id="track-continue-card"
-            style="border-left: 3px solid ${trackTarget.track.color};">
-            <div class="track-continue-icon">${trackTarget.project.icon}</div>
-            <div class="track-continue-info">
-              <div class="track-continue-name">${trackTarget.project.name}</div>
-              <div class="track-continue-meta">${trackTarget.track.name} · Level ${trackTarget.levelIndex + 1}</div>
-            </div>
-            <div class="workout-card-arrow">›</div>
+      ${lead ? '' : `
+        <div class="section">
+          <div class="section-header">
+            <span class="label">Continue</span>
           </div>
-        ` : `
           <div class="card card-interactive track-continue-card" id="track-continue-card">
             <div class="track-continue-icon">🎓</div>
             <div class="track-continue-info">
               <div class="track-continue-name">Start a Learning Track</div>
-              <div class="track-continue-meta">Toastmasters-style projects with reps & evaluations</div>
+              <div class="track-continue-meta">Toastmasters-style projects with reps and evaluations</div>
             </div>
             <div class="workout-card-arrow">›</div>
           </div>
-        `}
-      </div>
+        </div>
+      `}
 
       <div class="section">
         <div class="section-header">
@@ -270,22 +287,22 @@ export function renderHome(container) {
   });
 
   document.getElementById('start-training-btn').addEventListener('click', () => {
-    navigateTo('workouts');
+    openContinueItem(lead);
   });
 
   container.querySelectorAll('[data-flow]').forEach(card => {
     card.addEventListener('click', () => navigateTo(card.dataset.flow));
   });
 
+  container.querySelectorAll('[data-continue-index]').forEach(card => {
+    card.addEventListener('click', () => {
+      openContinueItem(continueItems[Number(card.dataset.continueIndex)]);
+    });
+  });
+
   const trackCardEl = document.getElementById('track-continue-card');
   if (trackCardEl) {
-    trackCardEl.addEventListener('click', () => {
-      if (trackTarget) {
-        navigateTo('track-project', { trackId: trackTarget.track.id, projectId: trackTarget.project.id });
-      } else {
-        navigateTo('tracks');
-      }
-    });
+    trackCardEl.addEventListener('click', () => navigateTo('tracks'));
   }
 
   const focusCardEl = document.getElementById('focus-card');
@@ -313,4 +330,52 @@ function getGreeting() {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+function continueActionLabel(item) {
+  if (item.kind === 'course') return `Continue ${item.project.name}`;
+  return `Practice ${item.exercise.name}`;
+}
+
+function continueCard(item, index) {
+  if (item.kind === 'course') {
+    const repsDone = getProjectProgress(item.project.id).reps.length;
+    return `
+      <div class="card card-interactive track-continue-card" data-continue-index="${index}" data-continue-kind="course"
+        style="border-left: 3px solid ${item.track.color};">
+        <div class="track-continue-icon">${item.project.icon}</div>
+        <div class="track-continue-info">
+          <div class="track-continue-name">${item.project.name}</div>
+          <div class="track-continue-meta">${item.track.name} · Level ${item.levelIndex + 1} · ${repsDone}/${item.project.repsRequired} reps</div>
+        </div>
+        <div class="workout-card-arrow">›</div>
+      </div>
+    `;
+  }
+
+  const category = CATEGORY_INFO[item.exercise.category];
+  return `
+    <div class="card card-interactive track-continue-card" data-continue-index="${index}" data-continue-kind="exercise"
+      style="border-left: 3px solid ${category?.color || 'var(--accent)'};">
+      <div class="track-continue-icon">${category?.icon || '🎯'}</div>
+      <div class="track-continue-info">
+        <div class="track-continue-name">${item.exercise.name}</div>
+        <div class="track-continue-meta">Pinned · ${category?.label || 'Exercise'}</div>
+      </div>
+      <div class="workout-card-arrow">›</div>
+    </div>
+  `;
+}
+
+function openContinueItem(item) {
+  if (!item) {
+    navigateTo('workouts');
+    return;
+  }
+  if (item.kind === 'course') {
+    navigateTo('track-project', { trackId: item.track.id, projectId: item.project.id });
+    return;
+  }
+  const workout = buildPinnedWorkout(item.exercise);
+  navigateTo('active-workout', { workout, customExercises: workout.exercises });
 }

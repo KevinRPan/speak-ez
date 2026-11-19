@@ -5,6 +5,7 @@
 
 import { getTrack, getTrackProjectCount } from '../data/tracks.js';
 import { getTrackProgressMap, getTrackSummary, isProjectComplete, isLevelUnlocked } from '../utils/track-progress.js';
+import { isCourseStarted, touchCourse } from '../utils/practice-focus.js';
 import { navigateTo } from '../lib/router.js';
 import { flowBar } from '../ui/chrome.js';
 
@@ -18,6 +19,8 @@ export function renderTrackDetail(container, data = {}) {
   const progressMap = getTrackProgressMap();
   const summary = getTrackSummary(track, progressMap);
   const total = getTrackProjectCount(track);
+  const next = summary.nextProject;
+  const started = isCourseStarted(track.id, progressMap);
 
   container.innerHTML = `
     <div class="screen">
@@ -35,6 +38,13 @@ export function renderTrackDetail(container, data = {}) {
           <div class="focus-progress-fill" style="width: ${Math.round(summary.pct * 100)}%; background: ${track.color};"></div>
         </div>
         <div class="track-card-progress-label mt-8">${summary.completed}/${total} projects complete</div>
+        ${next ? `
+          <button class="btn btn-primary btn-block track-start-btn" id="start-course-btn" type="button">
+            ${started ? `Continue · ${next.project.name}` : 'Start this track'}
+          </button>
+        ` : `
+          <p class="track-card-progress-label mt-8">You finished this track.</p>
+        `}
       </div>
 
       ${track.levels.map((level, levelIndex) => {
@@ -87,6 +97,14 @@ export function renderTrackDetail(container, data = {}) {
   document.getElementById('back-to-tracks').addEventListener('click', () => {
     navigateTo('tracks');
   });
+
+  const startBtn = document.getElementById('start-course-btn');
+  if (startBtn && next) {
+    startBtn.addEventListener('click', () => {
+      touchCourse(track.id);
+      navigateTo('track-project', { trackId: track.id, projectId: next.project.id });
+    });
+  }
 
   container.querySelectorAll('.project-row[data-project]').forEach(row => {
     row.addEventListener('click', () => {

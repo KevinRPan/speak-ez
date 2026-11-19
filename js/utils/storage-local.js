@@ -19,6 +19,10 @@ export const defaults = {
   personalRecords: {},
   customWorkouts: [],
   trackProgress: {},
+  practiceFocus: {
+    courses: {},
+    pins: [],
+  },
   settings: {
     restDuration: 30,
     soundEnabled: true,
@@ -35,11 +39,15 @@ export function loadLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      _cache = { ...defaults, ...JSON.parse(raw) };
+      _cache = { ...structuredClone(defaults), ...JSON.parse(raw) };
       _cache.user = { ...defaults.user, ..._cache.user };
       _cache.settings = { ...defaults.settings, ..._cache.settings };
+      _cache.practiceFocus = {
+        courses: { ...(_cache.practiceFocus?.courses || {}) },
+        pins: Array.isArray(_cache.practiceFocus?.pins) ? _cache.practiceFocus.pins : [],
+      };
     } else {
-      _cache = { ...defaults };
+      _cache = structuredClone(defaults);
     }
   } catch {
     _cache = { ...defaults };
