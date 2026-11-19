@@ -5,6 +5,7 @@
 import { getHistory } from '../utils/storage.js';
 import { navigateTo } from '../lib/router.js';
 import { flowBar, pageHeader } from '../ui/chrome.js';
+import { isolationLogCard, isolationMeta } from '../ui/isolation-log.js';
 
 export function renderHistory(container) {
   const history = getHistory();
@@ -38,7 +39,9 @@ export function renderHistory(container) {
               <div class="history-info">
                 <div class="history-name">${session.workoutName}</div>
                 <div class="history-meta">
-                  ${formatDate(session.completedAt)} · ${Math.round(session.totalDuration / 60)} min · ${session.setsCompleted}/${session.totalSets} sets
+                  ${formatDate(session.completedAt)} · ${session.type === 'isolation'
+                    ? isolationMeta(session)
+                    : `${Math.round(session.totalDuration / 60)} min · ${session.setsCompleted}/${session.totalSets} sets`}
                 </div>
               </div>
               <div class="history-xp">+${session.xpEarned} XP</div>
@@ -103,6 +106,7 @@ function renderSessionDetail(container, session) {
         </div>
       </div>
 
+      ${session.type === 'isolation' ? isolationLogCard(session) : `
       <div class="card mb-16">
         <div class="label mb-12">Exercises</div>
         ${session.exercises.map(ex => `
@@ -117,6 +121,7 @@ function renderSessionDetail(container, session) {
           </div>
         `).join('')}
       </div>
+      `}
 
       <div class="card card-sm">
         <div class="flex items-center justify-between">

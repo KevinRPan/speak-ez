@@ -88,6 +88,7 @@ function updateNav(screen) {
     'interview-drill': 'interview-setup',
     'interview-upload': 'interview-setup',
     'interview-history': 'interview-setup',
+    'isolation': 'home',
   };
 
   const activeTab = screenToTab[screen] || 'home';
