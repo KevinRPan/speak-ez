@@ -27,8 +27,10 @@ import { renderIsolation, cleanupIsolation } from './screens/isolation.js';
 import { loadAll, getUser, pullAndMerge } from './utils/storage.js';
 import { getLevelInfo, getDisplayStreak } from './utils/xp.js';
 import { checkSession, isAuthenticated } from './utils/auth.js';
+import { initViewport } from './ui/viewport.js';
 
 function init() {
+  initViewport();
   loadAll();
 
   initRouter({
