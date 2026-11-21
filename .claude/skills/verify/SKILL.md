@@ -9,7 +9,7 @@ Speak-EZ is a no-build static app (ES modules) + one Cloudflare Pages Function (
 
 ## Serve the app
 
-`npx wrangler pages dev .` needs a GEMINI_API_KEY and network. For UI verification, a plain static server is enough — plus a stub for `POST /api/feedback` that logs the request body and returns a canned feedback JSON (shape: `{ feedback: { summary, transcript, scores: {clarity,structure,confidence,conciseness,filler_rate,pace}, filler_count, estimated_wpm, session_reaction, strengths, improvements, example } }`). Logging the body lets you assert what the client actually sends (e.g. `coachContext`, `interviewContext`).
+`npx wrangler pages dev .` needs a GEMINI_API_KEY and network. For UI verification, a plain static server is enough — plus a stub for `POST /api/feedback` that logs the request body and returns a canned feedback JSON (shape: `{ feedback: { summary, transcript, scores: {clarity,structure,confidence,conciseness,filler_rate,pace,directness}, message: {answered, answered_note, recommendation, recommendation_note, caveats, caveat_note}, filler_count, estimated_wpm, session_reaction, strengths, improvements, example } }`). Logging the body lets you assert what the client actually sends (e.g. `coachContext`, `interviewContext`).
 
 ## Drive it
 

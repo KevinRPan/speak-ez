@@ -61,7 +61,8 @@ Important:
 - scores array must have one entry per evaluation criterion
 - Be specific and actionable in your feedback
 - Reference the actual content of their answer
-- Calibrate expectations to the ${level || 'Senior'} level`;
+- Calibrate expectations to the ${level || 'Senior'} level
+- Judge what they said, not only how fluently they said it. In improvements, say so when they bury the recommendation, give more than one unnecessary caveat before the point, or fail to answer the question that was asked.`;
 
     const userPrompt = `Interview Question: "${question}"
 

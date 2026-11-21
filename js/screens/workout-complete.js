@@ -119,7 +119,7 @@ export function renderWorkoutComplete(container, data = {}) {
           <div class="card mb-16">
             <div class="label mb-12">Session Scores</div>
             ${Object.entries(session.avgAiScores).map(([k, v]) => {
-              const labels = { clarity: 'Clarity', structure: 'Structure', confidence: 'Confidence', conciseness: 'Conciseness', filler_rate: 'Filler Rate', pace: 'Pace' };
+              const labels = { clarity: 'Clarity', structure: 'Structure', confidence: 'Confidence', conciseness: 'Conciseness', filler_rate: 'Filler Rate', pace: 'Pace', directness: 'Directness' };
               const label = labels[k] || k;
               const pct = Math.round((v / 10) * 100);
               const color = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';

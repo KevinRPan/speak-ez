@@ -29,15 +29,31 @@ Return your response as JSON with exactly this structure:
     "confidence": <1-10, assertive language, steady delivery, no excessive hedging — penalize "I think maybe", "I guess", "sort of">,
     "conciseness": <1-10, direct and to the point — penalize padding, repetition, unnecessary tangents>,
     "filler_rate": <1-10, frequency of filler words (um, uh, like, you know) — 10=none, 7=occasional, 4=frequent, 1=constant>,
-    "pace": <1-10, speaking speed — 10=ideal 120-160 WPM, penalize if clearly too fast or too slow>
+    "pace": <1-10, speaking speed — 10=ideal 120-160 WPM, penalize if clearly too fast or too slow>,
+    "directness": <1-10, did the opening answer what was asked and state the point or recommendation — 10=the first sentence is the answer, 4=they get there after caveats or background, 1=they never answer. Fluent, filler-free speech does not raise this score when the point is buried>
+  },
+  "message": {
+    "answered": "yes" | "partial" | "no",
+    "answered_note": "one sentence: did they answer the question that was asked, and if not, what they answered instead",
+    "recommendation": "led" | "buried" | "missing" | "not_asked",
+    "recommendation_note": "one sentence: where the recommendation or main point landed",
+    "caveats": "tight" | "one" | "stacked",
+    "caveat_note": "one sentence naming the hedges, or saying the caveat earned its place"
   },
   "filler_count": <integer count of filler words detected>,
   "estimated_wpm": <estimated words per minute, or null if unclear>,
   "session_reaction": <"great" if all scores>=7, "tough" if 2+ scores<=4, otherwise "solid">,
   "strengths": ["specific strength 1", "specific strength 2"],
   "improvements": ["actionable improvement 1", "actionable improvement 2"],
-  "example": "A concise example of a stronger way to answer this prompt (2-3 sentences)"
+  "example": "A concise example of a stronger way to answer this prompt (2-3 sentences). Lead with the answer or the recommendation, then at most one necessary caveat."
 }
+
+Judge what they said, not only how fluently they said it.
+- answered is "no" when they never address the question, "partial" when they circle it, and "yes" when a listener could repeat the answer from the opening.
+- recommendation is "led" when the call is in the first sentence, "buried" when it arrives after context or caveats, "missing" when a decision was needed and none was stated, and "not_asked" when the prompt does not call for a recommendation.
+- caveats is "stacked" when two or more hedges or caveats arrive before the point. "one" means a single caveat after the point. "tight" means no caveat, or the caveat is the point.
+- If they bury the recommendation, stack caveats, or miss the question, say that in improvements in those words, with a short quote when you can.
+- On acting, comedy, story, vocal, or physical drills, set recommendation to "not_asked", caveats to "tight", and answered to "yes" unless the drill context says to judge a recommendation. Do not tell those speakers to open with a business recommendation.
 
 Important: scores must be integers 1-10. Keep strengths and improvements to 2-3 items each.`;
 
@@ -80,7 +96,7 @@ export async function onRequestPost(context) {
       // Multimodal: analyze recording + prompt context
       let systemText = REVIEW_SYSTEM_PROMPT.replace('{{PROMPT}}', prompt);
       if (typeof coachContext === 'string' && coachContext.trim()) {
-        systemText += `\n\nDrill context: ${coachContext.slice(0, 1500)}\n\nJudge the recording as a coach for this specific drill, following the drill context above — including how to interpret the score dimensions. Keep the JSON structure and score keys exactly the same, but make the strengths, improvements, and example specific to this drill rather than generic public-speaking advice.`;
+        systemText += `\n\nDrill context: ${coachContext.slice(0, 1500)}\n\nJudge the recording as a coach for this specific drill, following the drill context above — including how to interpret the score dimensions. Keep the JSON structure and score keys exactly the same, including message and directness, but make the strengths, improvements, and example specific to this drill rather than generic public-speaking advice. If this drill is not a question, a recommendation, or a briefing, mark recommendation "not_asked" and do not force an executive frame.`;
       } else if (interviewContext?.position) {
         const role = interviewContext.level
           ? `${interviewContext.level}-level ${interviewContext.position}`
@@ -94,7 +110,7 @@ export async function onRequestPost(context) {
         ]
       }];
       generationConfig = {
-        maxOutputTokens: 1200,
+        maxOutputTokens: 1600,
         temperature: 0.7,
         responseMimeType: 'application/json'
       };

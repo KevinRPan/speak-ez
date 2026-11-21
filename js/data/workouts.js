@@ -44,6 +44,20 @@ export const workoutTemplates = [
     ],
   },
   {
+    id: 'exec-reps',
+    name: 'Exec Reps',
+    description: 'A short briefing practice: recommendation first, then a triple step and a cold-slide readout.',
+    duration: 8,
+    difficulty: 'intermediate',
+    icon: '🧭',
+    color: '#FDCB6E',
+    exercises: [
+      { exerciseId: 'executive-readout', sets: 2, duration: 90, rest: 20 },
+      { exerciseId: 'triple-step', sets: 1, duration: 75, rest: 20 },
+      { exerciseId: 'cold-slides', sets: 1, duration: 120, rest: 0 },
+    ],
+  },
+  {
     id: 'break-room',
     name: 'Break Room',
     description: 'Topics from your actual workplace, then a quick story that lands on what changed within you.',

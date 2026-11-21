@@ -900,6 +900,13 @@ a {
   margin-bottom: 8px;
 }
 
+.prompt-text.is-brief {
+  white-space: pre-line;
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
 .prompt-hint {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -2013,6 +2020,46 @@ a {
   margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.message-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.message-review-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.message-review-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.message-review-verdict {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.message-review-verdict.is-good { color: var(--success); }
+.message-review-verdict.is-warn { color: var(--warning); }
+.message-review-verdict.is-bad { color: var(--danger); }
+.message-review-verdict.is-neutral { color: var(--text-tertiary); }
+
+.message-review-note {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text);
+  margin-top: 2px;
 }
 
 .ai-feedback-scores {

@@ -40,6 +40,32 @@ export const SCENARIO_CATEGORY_INFO = {
 export const scenarios = [
   // === PROFESSIONAL INTERACTIONS ===
   {
+    id: 'exec-readout',
+    category: SCENARIO_CATEGORIES.PROFESSIONAL,
+    name: 'Executive Readout',
+    description: 'Brief a CEO who will interrupt if the recommendation is not in the first sentence.',
+    context: 'You have ninety seconds with the CEO before their next meeting. Weekly active users are down 3%, support tickets mentioning “slow” are up, and the last release shipped Thursday. They asked: is the product getting better, and what do you want them to do?',
+    duration: 90,
+    difficulty: 'advanced',
+    tips: 'First sentence: the call. Then one reason. If they interrupt, answer the new question instead of restarting the briefing.',
+    aiRole: 'You are the CEO. You are impatient and precise. If they have not stated a recommendation, interrupt and ask "What do you want me to do?" If they stack caveats, say "Pick one risk. What\'s the call?" Ask one hard follow-up about the number, the alternative they rejected, or what happens if they are wrong. Do not accept a fluent update in place of a decision.',
+    unlocked: true,
+    order: 0,
+  },
+  {
+    id: 'incomplete-data-brief',
+    category: SCENARIO_CATEGORIES.PROFESSIONAL,
+    name: 'Recommendation, Incomplete Data',
+    description: 'A VP wants a decision today. The analysis is not finished.',
+    context: 'Your VP stops you in the hall. Two metrics disagree: signups are up 12%, and 30-day retention of those signups is down. You cannot reconcile them before the planning meeting this afternoon. They need a recommendation they can take into that room.',
+    duration: 90,
+    difficulty: 'advanced',
+    tips: 'Recommend something they can do today. Name the missing split once, after the call. Do not list every analysis you wish you had.',
+    aiRole: 'You are a VP who has to walk into a planning meeting in an hour. You will interrupt a caveated answer and ask "So what should I say in that room?" If they bury the recommendation, ask for it directly. If they give it, challenge it once: what if the retention drop is just mix?',
+    unlocked: true,
+    order: 1,
+  },
+  {
     id: 'job-interview-greeting',
     category: SCENARIO_CATEGORIES.PROFESSIONAL,
     name: 'Job Interview Greeting',
