@@ -9,7 +9,7 @@
  * - Provides final summary feedback when isComplete is true
  */
 
-import { geminiAnswerText, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
+import { geminiAnswerText, geminiErrorDetail, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
 
 const QA_SYSTEM_PROMPT = `You are role-playing in a communication practice scenario. Here is the situation:
 
@@ -134,7 +134,7 @@ export async function onRequestPost(context) {
       const errBody = await geminiResponse.text();
       console.error('Gemini API error:', geminiResponse.status, errBody);
       return new Response(
-        JSON.stringify({ error: 'AI service error' }),
+        JSON.stringify({ error: 'AI service error', detail: geminiErrorDetail(errBody) }),
         { status: 502, headers: jsonHeaders }
       );
     }

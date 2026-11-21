@@ -9,7 +9,7 @@
  * 3) Generate a dynamic next follow-up question for multi-turn practice
  */
 
-import { geminiAnswerText, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
+import { geminiAnswerText, geminiErrorDetail, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
 
 const TRANSCRIBE_PROMPT = `You are a precise transcription engine.
 
@@ -426,7 +426,7 @@ async function callGemini({ apiKey, contents, generationConfig, jsonHeaders }) {
     const errBody = await response.text();
     console.error('Gemini API error:', response.status, errBody);
     return {
-      errorResponse: new Response(JSON.stringify({ error: 'AI service error' }), {
+      errorResponse: new Response(JSON.stringify({ error: 'AI service error', detail: geminiErrorDetail(errBody) }), {
         status: 502,
         headers: jsonHeaders,
       }),

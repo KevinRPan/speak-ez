@@ -7,7 +7,7 @@
  * Returns structured feedback via Gemini with per-criterion scores.
  */
 
-import { geminiAnswerText, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
+import { geminiAnswerText, geminiErrorDetail, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -93,7 +93,7 @@ Provide your evaluation as JSON only.`;
       const errBody = await geminiResponse.text();
       console.error('Gemini API error:', geminiResponse.status, errBody);
       return new Response(
-        JSON.stringify({ error: 'AI service error' }),
+        JSON.stringify({ error: 'AI service error', detail: geminiErrorDetail(errBody) }),
         { status: 502, headers: jsonHeaders }
       );
     }
