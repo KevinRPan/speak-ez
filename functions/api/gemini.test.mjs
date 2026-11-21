@@ -47,15 +47,17 @@ function captureFetch(payloads) {
 }
 
 function assertListeningCall(call, { mimeType, media }) {
-  assert.match(call.url, /\/models\/gemini-3\.6-flash:generateContent\?key=test$/);
-  assert.equal(call.body.generationConfig.thinkingConfig.thinkingLevel, 'MINIMAL');
+  assert.match(call.url, /\/models\/gemini-3\.8-flash:generateContent\?key=test$/);
+  assert.equal(call.body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
+  assert.equal(call.body.generationConfig.temperature, undefined);
+  assert.ok(call.body.generationConfig.maxOutputTokens >= 16384);
   assert.equal(call.body.generationConfig.responseMimeType, 'application/json');
   const audio = call.body.contents[0].parts.find((part) => part.inline_data);
   assert.equal(audio.inline_data.mime_type, mimeType);
   assert.equal(audio.inline_data.data, media);
 }
 
-test('workout review sends the recording to gemini-3.6-flash and ignores thought text', async () => {
+test('workout review sends the recording to gemini-3.8-flash and ignores thought text', async () => {
   const calls = captureFetch([{
     summary: 'Clear introduction.',
     transcript: 'I led the launch.',
@@ -156,10 +158,35 @@ test('interview video feedback transcribes the media before scoring it', async (
   assertListeningCall(calls[0], { mimeType: 'video/webm', media: 'video-bytes' });
   assert.match(calls[0].body.contents[0].parts[0].text, /Transcribe the spoken content/);
   for (const call of calls.slice(1)) {
-    assert.match(call.url, /gemini-3\.6-flash/);
-    assert.equal(call.body.generationConfig.thinkingConfig.thinkingLevel, 'MINIMAL');
+    assert.match(call.url, /gemini-3\.8-flash/);
+    assert.equal(call.body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
+    assert.equal(call.body.generationConfig.temperature, undefined);
     assert.equal(call.body.contents[0].parts.find((part) => part.inline_data), undefined);
   }
+});
+
+test('a rejected Gemini call returns the upstream reason without the API key', async () => {
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    error: {
+      status: 'INVALID_ARGUMENT',
+      message: 'Thinking level MINIMAL is not supported. Request URL had key=secret-value',
+    },
+  }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  const response = await feedback({
+    request: post('/api/feedback', {
+      prompt: 'Say hello',
+      media: 'audio-bytes',
+      mimeType: 'audio/webm',
+    }),
+    env: { GEMINI_API_KEY: 'test' },
+  });
+
+  assert.equal(response.status, 502);
+  const data = await response.json();
+  assert.equal(data.error, 'AI service error');
+  assert.match(data.detail, /MINIMAL is not supported/);
+  assert.doesNotMatch(data.detail, /secret-value/);
 });
 
 test('text-only drill feedback uses the same live model', async () => {
@@ -174,7 +201,8 @@ test('text-only drill feedback uses the same live model', async () => {
   });
 
   assert.equal(response.status, 200);
-  assert.match(calls[0].url, /gemini-3\.6-flash/);
-  assert.equal(calls[0].body.generationConfig.thinkingConfig.thinkingLevel, 'MINIMAL');
+  assert.match(calls[0].url, /gemini-3\.8-flash/);
+  assert.equal(calls[0].body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
+  assert.equal(calls[0].body.generationConfig.temperature, undefined);
   assert.equal(calls[0].body.contents[0].parts.find((part) => part.inline_data), undefined);
 });

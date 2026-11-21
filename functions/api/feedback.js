@@ -11,7 +11,7 @@
  * Gemini transcribes and analyzes the spoken response relative to the prompt.
  */
 
-import { geminiAnswerText, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
+import { geminiAnswerText, geminiErrorDetail, geminiGenerateUrl, geminiRequestBody } from './_gemini.js';
 
 const REVIEW_SYSTEM_PROMPT = `You are a speaking coach reviewing a practice recording. The speaker was responding to this prompt:
 
@@ -119,7 +119,7 @@ export async function onRequestPost(context) {
       const errBody = await geminiResponse.text();
       console.error('Gemini API returned error:', geminiResponse.status, errBody);
       return new Response(
-        JSON.stringify({ error: 'AI service error' }),
+        JSON.stringify({ error: 'AI service error', detail: geminiErrorDetail(errBody) }),
         { status: 502, headers: jsonHeaders }
       );
     }
