@@ -20,6 +20,7 @@ const SCORE_CATEGORIES = [
   { key: 'conciseness', label: 'Concise',     color: '#FDCB6E' },
   { key: 'filler_rate', label: 'Fillers',     color: '#58CC02' },
   { key: 'pace',        label: 'Pace',        color: '#E84393' },
+  { key: 'directness',  label: 'Direct',      color: '#74B9FF' },
 ];
 
 let activeTab = 'overview';
@@ -125,7 +126,7 @@ function renderOverview(history, user, weeklyCount, level) {
         <div class="empty-state-inline">Complete sessions with AI Review to see scores here.</div>
       ` : `
         <div class="skill-rings-grid">
-          ${SCORE_CATEGORIES.map(cat => {
+          ${SCORE_CATEGORIES.filter(cat => cat.key !== 'directness' || avgScores[cat.key] != null).map(cat => {
             const val = avgScores[cat.key] ?? null;
             const pct = val !== null ? val / 10 : 0;
             return renderSkillRing(cat.label, val, pct, cat.color);

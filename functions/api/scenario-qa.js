@@ -40,7 +40,15 @@ const SUMMARY_TEMPLATE = `,
       "engagement": <1-5>
     },
     "strengths": ["specific strength 1", "specific strength 2"],
-    "improvements": ["actionable improvement 1", "actionable improvement 2"]
+    "improvements": ["actionable improvement 1", "actionable improvement 2"],
+    "message": {
+      "answered": "yes" | "partial" | "no",
+      "answered_note": "one sentence on whether they answered what this situation asked",
+      "recommendation": "led" | "buried" | "missing" | "not_asked",
+      "recommendation_note": "one sentence on where the recommendation or point landed",
+      "caveats": "tight" | "one" | "stacked",
+      "caveat_note": "one sentence naming the hedges, or saying the caveat earned its place"
+    }
   }`;
 
 export async function onRequestPost(context) {
@@ -86,12 +94,13 @@ export async function onRequestPost(context) {
 
     // Build round-specific instructions
     let roundInstruction;
+    const pressure = ' If they buried the point, ask for the recommendation or the direct answer. If they stacked caveats, ask them to pick one. Stay in the role you were given.';
     if (round <= 1) {
-      roundInstruction = 'This is the user\'s initial response to the scenario. React naturally and ask a relevant follow-up question that the other person in this situation would genuinely ask.';
+      roundInstruction = 'This is the user\'s initial response to the scenario. React naturally and ask a relevant follow-up question that the other person in this situation would genuinely ask.' + pressure;
     } else if (isLastRound) {
-      roundInstruction = 'This is the final round. React to what they said, give a brief closing response in character, and then provide a complete performance summary.';
+      roundInstruction = 'This is the final round. React to what they said, give a brief closing response in character, and then provide a complete performance summary. In the summary, judge what they said: whether they answered the question, whether they led with the recommendation or buried it, and whether they stacked caveats. Name those misses in improvements.';
     } else {
-      roundInstruction = `This is round ${round} of ${totalRounds}. Continue the conversation naturally. React to their previous answer AND ask a new follow-up question.`;
+      roundInstruction = `This is round ${round} of ${totalRounds}. Continue the conversation naturally. React to their previous answer AND ask a new follow-up question.` + pressure;
     }
 
     // Build the system prompt

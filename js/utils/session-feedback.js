@@ -15,6 +15,7 @@ const SCORE_LABELS = {
   conciseness: 'Conciseness',
   filler_rate: 'Filler Rate',
   pace: 'Pace',
+  directness: 'Directness',
 };
 
 const DRILL_SUGGESTIONS = {
@@ -24,6 +25,7 @@ const DRILL_SUGGESTIONS = {
   conciseness: 'Try the Concise Messaging drill — 30-second answer challenge.',
   filler_rate: 'Try the Filler Elimination drill to break the filler habit.',
   pace: 'Try the Pace & Rhythm drill — aim for 130–150 WPM.',
+  directness: 'Try Executive Readout — recommendation in the first sentence.',
 };
 
 const TOUGH_HEADLINES = [
