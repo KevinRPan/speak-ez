@@ -5,6 +5,7 @@
 
 import { getScenario } from '../data/scenarios.js';
 import { navigateTo } from '../lib/router.js';
+import { messageReviewMarkup } from '../utils/message-review.js';
 import { recordPracticeSession, normalizeAiScores } from '../utils/practice-log.js';
 
 // State
@@ -373,6 +374,8 @@ function renderComplete() {
               <span>AI Feedback</span>
             </div>
             <div class="ai-feedback-summary">${escapeHtml(fb.summary)}</div>
+
+            ${messageReviewMarkup(fb.message)}
 
             ${hasScores ? `
               <div class="ai-feedback-scores">

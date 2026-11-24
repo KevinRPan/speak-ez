@@ -6,6 +6,8 @@
 import { getWorkout, randomizeWarmups } from '../data/workouts.js';
 import { getExercise, getRandomPrompt, CATEGORY_INFO } from '../data/exercises.js';
 import { buildBanterPrompt, normalizeWorkplace } from '../data/banter.js';
+import { buildGamePrompt } from '../data/speaking-games.js';
+import { messageReviewMarkup } from '../utils/message-review.js';
 import { navigateTo } from '../lib/router.js';
 import { getSettings, loadAll, saveAll } from '../utils/storage.js';
 import { analyzeTranscript, getFillerRateScore, getPaceScore, getPaceLabel } from '../utils/transcript-analysis.js';
@@ -100,6 +102,8 @@ function assignPrompt(exercise, trackContext, avoidSparks) {
     const built = buildBanterPrompt(getWorkplace(), { avoidSparks });
     return { prompt: built.text, promptKey: built.spark };
   }
+  const game = buildGamePrompt(exercise);
+  if (game) return { prompt: game, promptKey: null };
   return {
     prompt: getRandomPrompt(exercise?.id, getInterviewContext()),
     promptKey: null,
@@ -426,6 +430,7 @@ const SCORE_LABELS = {
   conciseness: 'Conciseness',
   filler_rate: 'Filler Rate',
   pace: 'Pace',
+  directness: 'Directness',
 };
 
 function renderFeedbackSection(set) {
@@ -435,7 +440,7 @@ function renderFeedbackSection(set) {
         <button class="btn btn-secondary btn-block" data-action="request-review">
           ✨ Review My Answer
         </button>
-        <div class="ai-review-hint">Get AI feedback — scores, filler count, pace</div>
+        <div class="ai-review-hint">Get AI feedback — the answer, the recommendation, the caveats</div>
       </div>
     `;
   }
@@ -492,6 +497,8 @@ function renderFeedbackSection(set) {
       ${fb.summary ? `
         <div class="ai-feedback-summary">${escapeHtml(fb.summary)}</div>
       ` : ''}
+
+      ${messageReviewMarkup(fb.message)}
 
       ${Object.keys(scores).length ? `
         <div class="ai-feedback-scores">
@@ -713,6 +720,7 @@ function finishWorkout() {
     const counts = {};
     setsWithScores.forEach(s => {
       Object.entries(s.feedbackScores).forEach(([k, v]) => {
+        if (!SCORE_LABELS[k] || !Number.isFinite(v)) return;
         totals[k] = (totals[k] || 0) + v;
         counts[k] = (counts[k] || 0) + 1;
       });
@@ -1139,6 +1147,12 @@ function refreshPrompt(set) {
     set.promptKey = built.spark;
     return;
   }
+  const game = !state.trackContext?.prompts?.length && buildGamePrompt(set.exercise);
+  if (game) {
+    set.prompt = game;
+    set.promptKey = null;
+    return;
+  }
   set.prompt = pickTrackPrompt(state.trackContext) || getRandomPrompt(set.exerciseId, getInterviewContext()) || set.prompt;
 }
 
@@ -1182,7 +1196,7 @@ function renderPromptCard(set, { shuffle = false } = {}) {
   const shuffleLabel = set.exercise?.workplaceSetup ? '↻ New topic' : '↻ Different prompt';
   return `
     <div class="prompt-card">
-      <div class="prompt-text">${escapeHtml(set.prompt)}</div>
+      <div class="prompt-text${set.prompt.includes('\n') ? ' is-brief' : ''}">${escapeHtml(set.prompt)}</div>
       ${shuffle ? `<button type="button" class="btn btn-ghost btn-sm mt-8" data-action="new-prompt">${shuffleLabel}</button>` : ''}
     </div>
   `;

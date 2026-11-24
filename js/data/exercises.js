@@ -3,6 +3,13 @@
  * Each exercise is a specific communication skill to practice
  */
 
+import {
+  COLD_SLIDES_COACHING,
+  EXECUTIVE_COACHING,
+  EXECUTIVE_PROMPTS,
+  TRIPLE_STEP_COACHING,
+} from './speaking-games.js';
+
 export const CATEGORIES = {
   WARMUP: 'warmup',
   VOCAL: 'vocal',
@@ -496,6 +503,62 @@ export const exercises = [
     tips: 'People decide emotionally and justify logically. Lead with why they should care, then back it up with evidence. Always address "why not" before they ask it.',
     defaultDuration: 180,
     metrics: ['persuasiveness', 'structure', 'call_to_action'],
+  },
+  {
+    id: 'executive-readout',
+    name: 'Executive Readout',
+    category: CATEGORIES.CONTENT,
+    description: 'Answer a decision-maker. Recommendation first, then one reason, then at most one caveat.',
+    instructions: [
+      'Read the question once',
+      'The first sentence is the recommendation or the answer',
+      'Give one reason',
+      'At most one caveat, after the call, and only if the decision needs it',
+      'Stop when the decision is clear',
+    ],
+    prompts: EXECUTIVE_PROMPTS,
+    tips: 'If you hear yourself say “it depends” twice, you have not made the call. Background is how a buried recommendation hides.',
+    defaultDuration: 90,
+    metrics: ['directness', 'recommendation', 'caveats'],
+    coaching: EXECUTIVE_COACHING,
+  },
+  {
+    id: 'triple-step',
+    name: 'Triple Step',
+    category: CATEGORIES.CONTENT,
+    description: 'Hold one message while you work three random words in, in order.',
+    instructions: [
+      'Read the message and the three words',
+      'Keep the message intact from the first sentence to the last',
+      'Use the words in order, inside real sentences',
+      'A listener should still be able to repeat the message',
+    ],
+    prompts: [
+      'Hold this message: Ship the smaller version on Thursday.\n\nWork these words in, in this order, without dropping the message:\n1. lighthouse\n2. Tuesday\n3. receipt',
+    ],
+    tips: 'The words are obstacles, not the topic. If the message disappears, the rep is over.',
+    defaultDuration: 75,
+    metrics: ['message', 'inclusion', 'coherence'],
+    coaching: TRIPLE_STEP_COACHING,
+  },
+  {
+    id: 'cold-slides',
+    name: 'Cold Slides',
+    category: CATEGORIES.CONTENT,
+    description: 'Present slides you have not seen, then close with one recommendation.',
+    instructions: [
+      'You have not seen these slides',
+      'Give each slide one sentence of meaning, not a reading of the bullets',
+      'Connect them into one story',
+      'Close with a single recommendation',
+    ],
+    prompts: [
+      'The number moved the wrong way\n\nSlide 1 — Weekly active users\n• Down 3% week over week\n• The drop is concentrated in new accounts\n\nSlide 2 — What else moved\n• Support tickets mentioning “slow” are up\n• The last release shipped Thursday\n\nSlide 3 — The open question\n• Mix shift, or a real quality drop?\n• The dashboard for that split is late\n\nYou have not seen these slides. Present them as one briefing. Close with a single recommendation.',
+    ],
+    tips: 'Reading the bullets is not a briefing. The recommendation is the point of standing up.',
+    defaultDuration: 120,
+    metrics: ['throughline', 'recommendation', 'brevity'],
+    coaching: COLD_SLIDES_COACHING,
   },
   {
     id: 'analogies-metaphors',

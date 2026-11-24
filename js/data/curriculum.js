@@ -260,6 +260,16 @@ export const CURRICULUM_UNITS = [
     evergreen: true,
     suggestedExercises: ['structured-response'],
   },
+
+  {
+    id: 'executive-communication',
+    name: 'Executive Communication',
+    description: 'Lead with the recommendation. Answer the question. One caveat.',
+    icon: '🧭',
+    color: '#FDCB6E',
+    evergreen: true,
+    suggestedExercises: ['executive-readout'],
+  },
 ];
 
 export const FINITE_UNITS = CURRICULUM_UNITS.filter(u => !u.evergreen);

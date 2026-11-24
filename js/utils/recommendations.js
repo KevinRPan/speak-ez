@@ -15,6 +15,7 @@ const SCORE_LABELS = {
   conciseness: 'Conciseness',
   filler_rate: 'Filler Rate',
   pace: 'Pace',
+  directness: 'Directness',
 };
 
 // Map score categories to curriculum unit IDs
@@ -25,6 +26,7 @@ const SCORE_TO_UNIT = {
   conciseness: 'concise-messaging',
   structure: 'strategic-pausing',
   clarity: 'clarity-structure',
+  directness: 'executive-communication',
 };
 
 /**
@@ -127,6 +129,7 @@ function getQuickWin(scoreKey, avg) {
     conciseness: 'Time your answers. Target under 90 seconds for most questions.',
     structure: 'Try PREP: Point, Reason, Example, Point. Works for any question.',
     clarity: 'Use the "explain it to a 12-year-old" test before your next answer.',
+    directness: 'Open with the recommendation. One caveat, after the call, only if the decision needs it.',
   };
   return scoreKey ? (tips[scoreKey] || null) : null;
 }
@@ -156,7 +159,7 @@ export function generateInsight(history) {
   }
 
   // Check if any score is consistently high
-  const categories = ['clarity', 'structure', 'confidence', 'conciseness', 'filler_rate', 'pace'];
+  const categories = ['directness', 'clarity', 'structure', 'confidence', 'conciseness', 'filler_rate', 'pace'];
   for (const cat of categories) {
     const vals = last3.map(s => s.avgAiScores?.[cat]).filter(v => v != null);
     if (vals.length >= 2 && avg(vals) >= 8) {

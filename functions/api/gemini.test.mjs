@@ -79,8 +79,61 @@ test('workout review sends the recording to gemini-3.8-flash and ignores thought
   assert.equal(data.feedback.transcript, 'I led the launch.');
   assert.equal(calls.length, 1);
   assertListeningCall(calls[0], { mimeType: 'audio/webm', media: 'audio-bytes' });
-  assert.match(calls[0].body.contents[0].parts[0].text, /Listen to the recording carefully/);
-  assert.match(calls[0].body.contents[0].parts[0].text, /story landing/);
+  const prompt = calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /Listen to the recording carefully/);
+  assert.match(prompt, /story landing/);
+  assert.match(prompt, /bury the recommendation/);
+  assert.match(prompt, /stack caveats/);
+  assert.match(prompt, /never answer/);
+  assert.match(prompt, /"directness"/);
+  assert.match(prompt, /not_asked/);
+});
+
+test('interview drill feedback asks for a buried recommendation and a missed question', async () => {
+  const calls = captureFetch([{ overall_score: 6, summary: 'Circled the question.' }]);
+
+  const response = await drillFeedback({
+    request: post('/api/interview-drill-feedback', {
+      question: 'Should we ship?',
+      transcript: 'There are a few caveats worth walking through first.',
+      field: 'data-science',
+      level: 'Staff',
+    }),
+    env: { GEMINI_API_KEY: 'test' },
+  });
+
+  assert.equal(response.status, 200);
+  const prompt = calls[0].body.contents[0].parts.map((part) => part.text).join('\n');
+  assert.match(prompt, /bury the recommendation/);
+  assert.match(prompt, /unnecessary caveat/);
+  assert.match(prompt, /fail to answer the question/);
+});
+
+test('final scenario round asks whether the recommendation was buried', async () => {
+  const calls = captureFetch([{
+    question: 'What do you want me to do?',
+    feedbackOnPrevious: 'No call yet.',
+    isComplete: true,
+    summary: { summary: 'No recommendation.', message: { recommendation: 'missing' } },
+  }]);
+
+  const response = await scenarioQa({
+    request: post('/api/scenario-qa', {
+      media: 'scene-audio',
+      mimeType: 'audio/webm',
+      scenarioContext: 'The CEO wants a decision.',
+      aiRole: 'You are the CEO.',
+      round: 3,
+      totalRounds: 3,
+    }),
+    env: { GEMINI_API_KEY: 'test' },
+  });
+
+  assert.equal(response.status, 200);
+  const prompt = calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /buried/);
+  assert.match(prompt, /stacked caveats/);
+  assert.match(prompt, /"recommendation": "led"/);
 });
 
 test('scenario Q&A sends the recording for the model to answer in character', async () => {
