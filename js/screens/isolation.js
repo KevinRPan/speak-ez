@@ -976,10 +976,9 @@ function supportedMime() {
 function setChrome(visible) {
   const header = document.querySelector('.header');
   const nav = document.querySelector('.bottom-nav');
-  const scroller = document.querySelector('.screen-container');
   if (header) header.style.display = visible ? '' : 'none';
   if (nav) nav.style.display = visible ? '' : 'none';
-  if (scroller) scroller.style.paddingBottom = visible ? '' : '24px';
+  document.body.classList.toggle('chrome-hidden', !visible);
 }
 
 function esc(value) {

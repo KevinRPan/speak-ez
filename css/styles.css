@@ -41,6 +41,10 @@
   --nav-height: 72px;
   --header-height: 56px;
   --sidebar-width: 220px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-height: 100dvh;
+  --vv-offset: 0px;
 
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
@@ -48,26 +52,37 @@
 html {
   font-family: var(--font);
   font-size: 16px;
-  background: var(--bg);
+  /* Home-indicator strip WebKit will not paint: match the tab bar. */
+  background: var(--bg-elevated);
   color: var(--text);
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
-  overflow: hidden;
-  height: 100%;
 }
 
-body {
-  height: 100%;
+html, body {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--vv-offset);
+  width: 100%;
+  height: var(--app-height);
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-/* Track the visual viewport on mobile (browser chrome show/hide) */
-@supports (height: 100dvh) {
-  html, body {
-    height: 100dvh;
+body {
+  background: var(--bg);
+}
+
+/* Installed iOS apps report 100dvh short of the glass. The script replaces
+   this with the measured screen once it can tell a keyboard from that gap. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    :root {
+      --app-height: calc(100dvh + var(--safe-bottom));
+    }
   }
 }
 
@@ -117,17 +132,18 @@ a {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100%;
+  min-height: 0;
 }
 
 /* === HEADER === */
 .header {
-  height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+  height: calc(var(--header-height) + var(--safe-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: env(safe-area-inset-top, 0px) 20px 0;
+  padding: var(--safe-top) 20px 0;
   flex-shrink: 0;
+  background: var(--bg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -163,11 +179,19 @@ a {
 /* === SCREEN CONTAINER === */
 .screen-container {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 16px);
+  padding-bottom: 16px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+}
+
+/* Header and tab bar are hidden during a rep. Keep Quit / Back below the
+   clock and the last action above the home indicator. */
+body.chrome-hidden .screen-container {
+  padding-top: var(--safe-top);
+  padding-bottom: max(16px, var(--safe-bottom));
 }
 
 .screen {
@@ -182,17 +206,15 @@ a {
 
 /* === BOTTOM NAV === */
 .bottom-nav {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+  width: 100%;
+  height: calc(var(--nav-height) + var(--safe-bottom));
   background: var(--bg-elevated);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 4px env(safe-area-inset-bottom, 0px);
+  padding: 0 4px var(--safe-bottom);
   z-index: 100;
 }
 
@@ -4349,7 +4371,7 @@ a {
 
 .iso-dock {
   position: sticky;
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+  bottom: 0;
   z-index: 3;
   padding: 16px 0 8px;
   background: linear-gradient(180deg, rgba(10, 10, 15, 0), var(--bg) 28%);

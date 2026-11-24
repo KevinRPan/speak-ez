@@ -54,6 +54,7 @@ export function navigateTo(screen, data = {}) {
         navigateTo('home');
       }
     };
+    document.body.classList.remove('chrome-hidden');
     document.querySelector('.header').style.display = '';
     document.querySelector('.bottom-nav').style.display = '';
     return;
@@ -63,6 +64,7 @@ export function navigateTo(screen, data = {}) {
   updateNav(screen);
 
   const hideChrome = ['active-workout', 'workout-complete', 'scenario-practice', 'interview-practice'].includes(screen);
+  document.body.classList.toggle('chrome-hidden', hideChrome);
   document.querySelector('.header').style.display = hideChrome ? 'none' : '';
   document.querySelector('.bottom-nav').style.display = hideChrome ? 'none' : '';
 }
