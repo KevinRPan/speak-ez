@@ -131,6 +131,10 @@ export async function onRequestPost(context) {
       body: JSON.stringify(geminiRequestBody(contents, generationConfig)),
     });
 
+    // Follow-up: the Gemini project behind GEMINI_API_KEY is out of prepay
+    // credits, so review calls fail with HTTP 402 ("Your prepayment credits
+    // are depleted") until someone buys credits at https://ai.studio/projects.
+    // The rating screen takes a written transcript until that balance is positive.
     if (!geminiResponse.ok) {
       const errBody = await geminiResponse.text();
       console.error('Gemini API returned error:', geminiResponse.status, errBody);
