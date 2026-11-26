@@ -145,6 +145,13 @@ export function renderWorkoutComplete(container, data = {}) {
           </div>
         ` : ''}
 
+        ${Array.isArray(session.selfTranscripts) && session.selfTranscripts.length ? `
+          <div class="card mb-16">
+            <div class="label mb-12">What you wrote</div>
+            ${session.selfTranscripts.map(text => `<p class="self-review-saved">${escapeHtml(text)}</p>`).join('')}
+          </div>
+        ` : ''}
+
         <div class="complete-icon">${leveledUp ? '🎉' : claimingSpark ? '✨' : '💪'}</div>
         <div class="complete-title">${claimingSpark ? 'Spark Complete!' : 'Workout Complete!'}</div>
         <div class="complete-subtitle">${session.workoutName}</div>
@@ -330,6 +337,13 @@ function bindTrackEval(container, trackInfo) {
       updateRep(project.id, rep.id, { notes: notesEl.value.trim() });
     });
   }
+}
+
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function getAvgRating(session) {

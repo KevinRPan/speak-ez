@@ -2015,6 +2015,54 @@ body.chrome-hidden .screen-container {
   align-items: center;
 }
 
+.self-review {
+  margin: 0 0 24px;
+  text-align: left;
+}
+
+.self-review-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.self-review-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.self-review-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.self-review .transcript-text {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+}
+
+.self-review-saved {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+  text-align: left;
+  white-space: pre-wrap;
+}
+
+.self-review-saved:last-child {
+  margin-bottom: 0;
+}
+
 .ai-feedback-card {
   background: var(--bg-card);
   border-radius: var(--radius);

@@ -44,8 +44,7 @@ export function analyzeTranscript(text, durationSeconds = 0) {
   // Process multi-word fillers first (longer phrases before sub-phrases)
   const sortedFillers = [...FILLER_WORDS].sort((a, b) => b.split(' ').length - a.split(' ').length);
   sortedFillers.forEach(filler => {
-    const pattern = '\\b' + filler.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&').replace(/\s+/g, '\\s+') + '\\b';
-    const regex = new RegExp(pattern, 'gi');
+    const regex = new RegExp(fillerPattern(filler), 'gi');
     const matches = workingText.match(regex);
     if (matches?.length) {
       fillerCounts[filler] = matches.length;
@@ -58,8 +57,7 @@ export function analyzeTranscript(text, durationSeconds = 0) {
   // --- Hedge detection ---
   const hedgeCounts = {};
   HEDGE_PHRASES.forEach(phrase => {
-    const pattern = '\\b' + phrase.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&').replace(/\s+/g, '\\s+') + '\\b';
-    const regex = new RegExp(pattern, 'gi');
+    const regex = new RegExp(fillerPattern(phrase), 'gi');
     const matches = normalizedText.match(regex);
     if (matches?.length) {
       hedgeCounts[phrase] = matches.length;
@@ -92,6 +90,12 @@ export function analyzeTranscript(text, durationSeconds = 0) {
   };
 }
 
+function fillerPattern(phrase, { capture = false } = {}) {
+  const escaped = phrase.replace(/[-[\]{}()*+?.,\\^$|#]/g, '\\$&').replace(/\s+/g, '\\s+');
+  const body = capture ? `(${escaped})` : escaped;
+  return `\\b${body}\\b`;
+}
+
 function buildHighlightedHtml(text) {
   // Escape HTML first, then wrap fillers in marks
   let escaped = text
@@ -102,8 +106,7 @@ function buildHighlightedHtml(text) {
   // Apply multi-word fillers first
   const sortedFillers = [...FILLER_WORDS].sort((a, b) => b.split(' ').length - a.split(' ').length);
   sortedFillers.forEach(filler => {
-    const pattern = '\\b(' + filler.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&').replace(/\s+/g, '\\s+') + ')\\b';
-    const regex = new RegExp(pattern, 'gi');
+    const regex = new RegExp(fillerPattern(filler, { capture: true }), 'gi');
     escaped = escaped.replace(regex, '<mark class="filler-mark">$1</mark>');
   });
 
@@ -147,4 +150,36 @@ export function getPaceLabel(wpm) {
   if (wpm <= 160) return 'Great pace';
   if (wpm <= 185) return 'Slightly fast';
   return 'Too fast';
+}
+
+/**
+ * Score a transcript the speaker typed themselves.
+ * Filler rate and pace only — clarity and the message still need a listener.
+ *
+ * @param {string} text
+ * @param {number} durationSeconds
+ * @returns {{ transcript: string, fillerCount: number, wpm: number|null, scores: object|null, analysis: object }|null}
+ */
+export function scoreSelfTranscript(text, durationSeconds = 0) {
+  const transcript = typeof text === 'string' ? text.trim() : '';
+  if (!transcript) return null;
+
+  const analysis = analyzeTranscript(transcript, durationSeconds);
+  if (!analysis) return null;
+
+  const scores = {};
+  if (analysis.fillersPerMinute != null) {
+    scores.filler_rate = getFillerRateScore(analysis.fillersPerMinute);
+  }
+  if (analysis.wpm != null) {
+    scores.pace = getPaceScore(analysis.wpm);
+  }
+
+  return {
+    transcript,
+    fillerCount: analysis.fillerCount,
+    wpm: analysis.wpm,
+    scores: Object.keys(scores).length ? scores : null,
+    analysis,
+  };
 }

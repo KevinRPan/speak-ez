@@ -10,7 +10,7 @@ import { buildGamePrompt } from '../data/speaking-games.js';
 import { messageReviewMarkup } from '../utils/message-review.js';
 import { navigateTo } from '../lib/router.js';
 import { getSettings, loadAll, saveAll } from '../utils/storage.js';
-import { analyzeTranscript, getFillerRateScore, getPaceScore, getPaceLabel } from '../utils/transcript-analysis.js';
+import { analyzeTranscript, getFillerRateScore, getPaceScore, getPaceLabel, scoreSelfTranscript } from '../utils/transcript-analysis.js';
 
 let state = null;
 let timerInterval = null;
@@ -370,6 +370,8 @@ function renderRating() {
           ${renderFeedbackSection(set)}
         ` : ''}
 
+        ${renderSelfReview(set)}
+
         <div class="rating-question">How did that set feel?</div>
         <div class="rating-stars">
           ${[1, 2, 3, 4, 5].map(n => `
@@ -388,6 +390,7 @@ function renderRating() {
   `;
 
   container.onclick = handleRatingClick;
+  bindSelfReview();
 }
 
 // === Tongue Twister Result ===
@@ -563,6 +566,81 @@ function renderFeedbackSection(set) {
   `;
 }
 
+function spokenDuration(set) {
+  if (set.spokenSeconds > 0) return set.spokenSeconds;
+  return set.duration || 0;
+}
+
+function applySelfReview(set) {
+  const scored = scoreSelfTranscript(set.selfTranscript, spokenDuration(set));
+  set.selfReview = scored;
+  if (set.aiReviewApplied) return;
+  if (!scored) {
+    set.feedbackScores = null;
+    set.feedbackTranscript = null;
+    set.feedbackFillerCount = null;
+    set.feedbackWpm = null;
+    return;
+  }
+  set.feedbackTranscript = scored.transcript;
+  set.feedbackFillerCount = scored.fillerCount;
+  set.feedbackWpm = scored.wpm;
+  set.feedbackScores = scored.scores;
+}
+
+function renderSelfMetrics(set) {
+  const analysis = set.selfReview?.analysis;
+  if (!analysis) return '';
+  const pace = analysis.wpm
+    ? `<span>${analysis.wpm} WPM · ${escapeHtml(getPaceLabel(analysis.wpm))}</span>`
+    : '';
+  const fpm = analysis.fillersPerMinute != null ? ` · ${analysis.fillersPerMinute}/min` : '';
+  const highlight = analysis.fillerCount > 0
+    ? `<div class="transcript-text">${analysis.highlightedHtml}</div>`
+    : '';
+  return `
+    <div class="self-review-stats">
+      <span>${analysis.fillerCount} filler${analysis.fillerCount === 1 ? '' : 's'}${fpm}</span>
+      ${pace}
+    </div>
+    ${highlight}
+  `;
+}
+
+function renderSelfReview(set) {
+  applySelfReview(set);
+  return `
+    <div class="self-review">
+      <div class="self-review-label">Write what you said</div>
+      <p class="self-review-hint">Type the words you actually said. Fillers and pace are counted on this device.</p>
+      <textarea id="self-transcript" class="form-input" data-self-transcript rows="4"
+        placeholder="Type the words you actually said…">${escapeHtml(set.selfTranscript || '')}</textarea>
+      <div data-self-metrics>${renderSelfMetrics(set)}</div>
+    </div>
+  `;
+}
+
+function bindSelfReview() {
+  const box = container?.querySelector('[data-self-transcript]');
+  if (!box) return;
+  box.addEventListener('input', () => {
+    const set = state?.sets?.[state.currentIndex];
+    if (!set || state.phase !== 'rating') return;
+    set.selfTranscript = box.value;
+    applySelfReview(set);
+    const metrics = container.querySelector('[data-self-metrics]');
+    if (metrics) metrics.innerHTML = renderSelfMetrics(set);
+  });
+}
+
+function flushSelfReviewFromDom() {
+  const box = container?.querySelector('[data-self-transcript]');
+  const set = state?.sets?.[state.currentIndex];
+  if (!box || !set || state.phase !== 'rating') return;
+  set.selfTranscript = box.value;
+  applySelfReview(set);
+}
+
 function renderScoreBar(label, value, maxValue = 10) {
   if (value === undefined || value === null) return '';
   const pct = Math.round((value / maxValue) * 100);
@@ -598,6 +676,7 @@ function blobToBase64(blob) {
 }
 
 async function requestReview() {
+  flushSelfReviewFromDom();
   if (!recordingBlob || !state) return;
 
   const setIndex = state.currentIndex;
@@ -641,11 +720,13 @@ async function requestReview() {
 
     // Persist scores + transcript to this set so session summary can use them
     if (feedbackResult && !feedbackResult.error) {
-      state.sets[setIndex].feedbackScores = feedbackResult.scores || null;
-      state.sets[setIndex].feedbackTranscript = feedbackResult.transcript || null;
-      state.sets[setIndex].feedbackFillerCount = feedbackResult.filler_count ?? null;
-      state.sets[setIndex].feedbackWpm = feedbackResult.estimated_wpm ?? null;
-      state.sets[setIndex].sessionReaction = feedbackResult.session_reaction || null;
+      const reviewed = state.sets[setIndex];
+      reviewed.aiReviewApplied = true;
+      reviewed.feedbackScores = feedbackResult.scores || null;
+      reviewed.feedbackTranscript = feedbackResult.transcript || null;
+      reviewed.feedbackFillerCount = feedbackResult.filler_count ?? null;
+      reviewed.feedbackWpm = feedbackResult.estimated_wpm ?? null;
+      reviewed.sessionReaction = feedbackResult.session_reaction || null;
     }
   } catch (err) {
     // Only update if we're still on the same set
@@ -752,6 +833,11 @@ function finishWorkout() {
     totalFillerCount: setsWithFillers.length > 0 ? totalFillerCount : null,
     sessionReaction,
   };
+
+  const selfTranscripts = state.sets
+    .map(set => (set.selfTranscript || '').trim())
+    .filter(Boolean);
+  if (selfTranscripts.length) session.selfTranscripts = selfTranscripts;
 
   if (state.trackContext) {
     session.track = {
@@ -983,11 +1069,16 @@ function startRestTimer() {
 async function completeSet() {
   const set = state.sets[state.currentIndex];
   set.completed = true;
+  const remaining = Number.isFinite(state.timeLeft) ? Math.max(0, state.timeLeft) : 0;
+  set.spokenSeconds = Math.max(1, (set.duration || 0) - remaining);
 
   // Stop speech recognition and save transcript for tongue twisters
   if (isTongueTwister(set) && recognition) {
     stopSpeechRecognition();
     set.spokenTranscript = (liveTranscript || finalTranscript).trim();
+    if (set.spokenTranscript && !set.selfTranscript) {
+      set.selfTranscript = set.spokenTranscript;
+    }
   }
 
   // Stop recording and save the blob URL to this set
@@ -1078,6 +1169,7 @@ async function handleActiveClick(e) {
 }
 
 function handleRatingClick(e) {
+  flushSelfReviewFromDom();
   const action = e.target.closest('[data-action]');
   if (!action) return;
   const type = action.dataset.action;
