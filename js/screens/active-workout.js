@@ -4,7 +4,7 @@
  */
 
 import { getWorkout, randomizeWarmups } from '../data/workouts.js';
-import { getExercise, getRandomPrompt, CATEGORY_INFO } from '../data/exercises.js';
+import { getExercise, getRandomPrompt } from '../data/exercises.js';
 import { buildBanterPrompt, normalizeWorkplace } from '../data/banter.js';
 import { buildGamePrompt } from '../data/speaking-games.js';
 import { messageReviewMarkup } from '../utils/message-review.js';
@@ -23,7 +23,10 @@ let mediaRecorder = null;
 let recordedChunks = [];
 let recordingBlobUrl = null;
 let recordingBlob = null;
-let recordingEnabled = false;
+let recordingEnabled = true;
+let recordingNote = '';
+let howOpen = false;
+let cameraPromise = null;
 
 // Speech recognition state (for tongue twisters)
 let recognition = null;
@@ -175,8 +178,10 @@ export function renderActiveWorkout(cont, data = {}) {
     } : null),
   };
 
-  // Reset recording state for new workout
-  recordingEnabled = false;
+  // Recording is the default. A failed camera falls back for this workout only.
+  recordingEnabled = true;
+  recordingNote = '';
+  howOpen = false;
   stopAndCleanupRecording();
 
   renderCurrentState();
@@ -197,8 +202,10 @@ function renderCurrentState() {
 
   const { phase } = state;
 
-  if (phase === 'ready') renderReady();
-  else if (phase === 'active') renderActive();
+  if (phase === 'ready') {
+    renderReady();
+    armPreview();
+  } else if (phase === 'active') renderActive();
   else if (phase === 'rating') renderRating();
   else if (phase === 'rest') renderRest();
   else if (phase === 'done') finishWorkout();
@@ -206,74 +213,38 @@ function renderCurrentState() {
 
 function renderReady() {
   const set = state.sets[state.currentIndex];
-  const catInfo = CATEGORY_INFO[set.exercise.category];
   const progress = state.currentIndex / state.sets.length;
 
   container.innerHTML = `
-    <div class="screen">
-      <div class="workout-header">
-        <div class="flex items-center justify-between mb-8">
-          <button class="btn btn-ghost btn-sm" data-action="quit-workout">✕ Quit</button>
-          <span class="label">${state.currentIndex + 1} of ${state.sets.length} sets</span>
-        </div>
-        <div class="workout-progress-bar">
-          <div class="workout-progress-fill" style="width: ${Math.round(progress * 100)}%"></div>
-        </div>
-        <div class="session-kicker">${sessionFlowLabel()}</div>
-      </div>
-
-      <div class="exercise-display">
-        <div class="exercise-display-icon">${catInfo.icon}</div>
-        <div class="exercise-display-name">${set.exercise.name}</div>
-        <div class="exercise-display-set">
-          Set ${set.setNumber} of ${set.totalSets}
-          <span class="badge badge-${getBadgeType(set.exercise.category)}" style="margin-left: 8px;">
-            ${catInfo.label}
-          </span>
-        </div>
-      </div>
-
-      ${renderWorkplaceSetup()}
-      ${renderPromptCard(set, { shuffle: true })}
-      ${renderStoryShapes(set)}
-
-      <div class="card mb-16">
-        <ul class="instructions-list">
-          ${set.exercise.instructions.map(i => `<li>${i}</li>`).join('')}
-        </ul>
-      </div>
-
-      ${set.exercise.tips ? `
-        <div class="tips-callout">
-          <div class="tips-callout-title">Pro Tip</div>
-          <div class="tips-callout-text">${set.exercise.tips}</div>
-        </div>
-      ` : ''}
-
-      <div class="timer-display">${formatTime(set.duration)}</div>
-
-      <div class="recording-toggle" data-action="toggle-recording">
-        <div class="recording-toggle-left">
-          <span class="recording-toggle-icon">${recordingEnabled ? '🔴' : '📹'}</span>
-          <div>
-            <div class="recording-toggle-label">Record yourself</div>
-            <div class="recording-toggle-hint">Camera &amp; audio for self-review</div>
+    <div class="screen rep-screen">
+      ${renderRepBar(progress)}
+      <div class="rep-body">
+        <div class="rep-stage">
+          <div class="rep-focus">
+            ${renderFocus(set, { shuffle: true })}
           </div>
         </div>
-        <div class="toggle ${recordingEnabled ? 'on' : ''}" data-action="toggle-recording"></div>
+        ${renderHow(set, { interactive: true })}
       </div>
-
-      <div class="workout-controls">
-        <button class="btn btn-timer-start btn-block" data-action="start-timer">
-          ${recordingEnabled ? '📹 Start Set &amp; Record' : 'Start Set'}
-        </button>
-      </div>
-
-      ${state.currentIndex > 0 ? `
-        <div class="text-center mt-8">
-          <button class="btn btn-ghost btn-sm" data-action="skip-exercise">Skip exercise →</button>
+      <div class="rep-dock">
+        <div class="rep-dock-row">
+          <div class="rep-thumb" ${recordingEnabled ? '' : 'hidden'}>
+            <video id="rep-preview" autoplay muted playsinline></video>
+          </div>
+          <div class="rep-clock" id="rep-duration">${formatTime(set.duration)}</div>
+          <button type="button" class="rep-chip ${recordingEnabled ? 'is-on' : ''}" data-action="toggle-recording" aria-pressed="${recordingEnabled ? 'true' : 'false'}">
+            ${recordingEnabled ? 'Record on' : 'Record off'}
+          </button>
+          <button type="button" class="rep-chip" data-action="toggle-how" aria-expanded="${howOpen ? 'true' : 'false'}">
+            ${howOpen ? 'Close' : 'How'}
+          </button>
         </div>
-      ` : ''}
+        <p class="rep-note" data-record-note ${recordingNote ? '' : 'hidden'}>${escapeHtml(recordingNote)}</p>
+        <button class="btn btn-timer-start btn-block" data-action="start-timer">Start set</button>
+        ${state.currentIndex > 0 ? `
+          <button class="btn btn-ghost btn-sm rep-skip" data-action="skip-exercise">Skip</button>
+        ` : ''}
+      </div>
     </div>
   `;
 
@@ -284,62 +255,42 @@ function renderReady() {
 function renderActive() {
   const set = state.sets[state.currentIndex];
   const progress = state.currentIndex / state.sets.length;
+  state.timeLeft = set.duration;
 
   container.innerHTML = `
-    <div class="screen">
-      <div class="workout-header">
-        <div class="flex items-center justify-between mb-8">
-          <button class="btn btn-ghost btn-sm" data-action="quit-workout">✕ Quit</button>
-          <span class="label">${state.currentIndex + 1} of ${state.sets.length} sets</span>
-        </div>
-        <div class="workout-progress-bar">
-          <div class="workout-progress-fill" style="width: ${Math.round(progress * 100)}%"></div>
-        </div>
-        <div class="session-kicker">${sessionFlowLabel()}</div>
-      </div>
-
-      ${recordingEnabled ? `
-        <div class="video-preview-container">
-          <video id="video-preview" class="video-preview" autoplay muted playsinline></video>
-          <div class="recording-indicator">
-            <span class="recording-dot"></span>
-            REC
+    <div class="screen rep-screen">
+      ${renderRepBar(progress)}
+      <div class="rep-body">
+        <div class="rep-stage">
+          <div class="rep-focus">
+            ${renderFocus(set)}
+            ${isTongueTwister(set) ? `
+              <div class="rep-heard" id="live-transcript">Listening...</div>
+            ` : ''}
           </div>
         </div>
-        ${renderExerciseIdentity(set, { compact: true })}
-      ` : renderExerciseIdentity(set)}
-
-      ${renderPromptCard(set)}
-      ${renderRecall(set)}
-
-      ${isTongueTwister(set) ? `
-        <div class="live-transcript-card">
-          <div class="live-transcript-label">What we heard:</div>
-          <div class="live-transcript-text" id="live-transcript">Listening...</div>
+        ${renderHow(set, { interactive: false })}
+      </div>
+      <div class="rep-dock">
+        <div class="rep-dock-row">
+          <div class="rep-thumb" ${recordingEnabled && mediaStream ? '' : 'hidden'}>
+            <video id="rep-preview" autoplay muted playsinline></video>
+            <span class="rep-rec">REC</span>
+          </div>
+          <div class="rep-clock running" id="timer">${formatTime(state.timeLeft)}</div>
+          <button type="button" class="rep-chip" data-action="toggle-how" aria-expanded="${howOpen ? 'true' : 'false'}">
+            ${howOpen ? 'Close' : 'How'}
+          </button>
         </div>
-      ` : ''}
-
-      <div class="timer-display running" id="timer">${formatTime(state.timeLeft)}</div>
-
-      <div class="workout-controls">
-        <button class="btn btn-timer-stop btn-block" data-action="stop-timer">
-          Done
-        </button>
+        <p class="rep-note" data-record-note ${recordingNote ? '' : 'hidden'}>${escapeHtml(recordingNote)}</p>
+        <button class="btn btn-timer-stop btn-block" data-action="stop-timer">Done</button>
       </div>
     </div>
   `;
 
   container.onclick = handleActiveClick;
+  attachPreview();
 
-  // Attach video stream to preview element if recording
-  if (recordingEnabled && mediaStream) {
-    const videoEl = document.getElementById('video-preview');
-    if (videoEl) {
-      videoEl.srcObject = mediaStream;
-    }
-  }
-
-  // Start speech recognition for tongue twisters
   if (isTongueTwister(set)) {
     startSpeechRecognition();
   }
@@ -352,28 +303,23 @@ function renderRating() {
   const hasRecording = !!set.recordingUrl;
 
   container.innerHTML = `
-    <div class="screen">
-      <div class="rating-section">
-        <div class="session-kicker" style="margin-top: 0; margin-bottom: 8px;">${sessionFlowLabel()}</div>
-        <div class="exercise-display-name mb-16">${set.exercise.name}</div>
-
-        ${isTongueTwister(set) ? renderTongueTwisterResult(set) : ''}
-
-        ${hasRecording ? `
-          <div class="playback-section">
-            <div class="playback-header">
-              <span class="recording-toggle-icon">📹</span>
-              <span>Review your recording</span>
-            </div>
-            <video id="playback-video" class="playback-video" controls playsinline src="${set.recordingUrl}"></video>
-          </div>
-
-          ${renderFeedbackSection(set)}
-        ` : ''}
-
-        ${renderSelfReview(set)}
-
-        <div class="rating-question">How did that set feel?</div>
+    <div class="screen rep-screen">
+      <div class="rep-bar">
+        <span class="rep-kicker rep-kicker-inline">${sessionFlowLabel()}</span>
+        <span class="rep-name" style="margin: 0;">${escapeHtml(set.exercise.name)}</span>
+      </div>
+      <div class="rep-body">
+        <div class="rep-stage rep-stage-start">
+          ${isTongueTwister(set) ? renderTongueTwisterResult(set) : ''}
+          ${hasRecording ? `
+            <video id="playback-video" class="rep-playback" controls playsinline src="${set.recordingUrl}"></video>
+            ${renderFeedbackSection(set)}
+          ` : ''}
+          ${renderSelfReview(set)}
+        </div>
+      </div>
+      <div class="rep-dock">
+        <div class="rating-question">How did that feel?</div>
         <div class="rating-stars">
           ${[1, 2, 3, 4, 5].map(n => `
             <button class="rating-star" data-action="rate" data-rating="${n}">${n}</button>
@@ -383,9 +329,7 @@ function renderRating() {
           <span>Rough</span>
           <span>Nailed it</span>
         </div>
-        <div class="mt-24">
-          <button class="btn btn-ghost btn-sm" data-action="skip-rating">Skip rating</button>
-        </div>
+        <button class="btn btn-ghost btn-sm rep-skip" data-action="skip-rating">Skip</button>
       </div>
     </div>
   `;
@@ -613,8 +557,8 @@ function renderSelfReview(set) {
   return `
     <div class="self-review">
       <div class="self-review-label">Write what you said</div>
-      <p class="self-review-hint">Type the words you actually said. Fillers and pace are counted on this device.</p>
-      <textarea id="self-transcript" class="form-input" data-self-transcript rows="4"
+      <p class="self-review-hint">Type the words you actually said.</p>
+      <textarea id="self-transcript" class="form-input" data-self-transcript rows="3"
         placeholder="Type the words you actually said…">${escapeHtml(set.selfTranscript || '')}</textarea>
       <div data-self-metrics>${renderSelfMetrics(set)}</div>
     </div>
@@ -747,20 +691,26 @@ function renderRest() {
   const nextExercise = nextSet ? nextSet.exercise : null;
 
   container.innerHTML = `
-    <div class="screen">
-      <div class="rest-screen">
-        <div class="session-kicker" style="margin-top: 0;">${sessionFlowLabel()}</div>
-        <div class="rest-label">Rest</div>
-        <div class="timer-display resting" id="timer">${formatTime(state.timeLeft)}</div>
-        ${nextExercise ? `
-          <div class="rest-next">
-            Up next: <strong>${nextExercise.name}</strong>
-            ${nextSet.setNumber > 1 ? ` — Set ${nextSet.setNumber}` : ''}
+    <div class="screen rep-screen">
+      <div class="rep-bar">
+        <span class="rep-kicker rep-kicker-inline">${sessionFlowLabel()}</span>
+      </div>
+      <div class="rep-body">
+        <div class="rep-stage">
+          <div class="rep-focus rep-rest">
+            <div class="rest-label">Rest</div>
+            <div class="rep-clock resting" id="timer">${formatTime(state.timeLeft)}</div>
+            ${nextExercise ? `
+              <div class="rest-next">
+                Up next: <strong>${escapeHtml(nextExercise.name)}</strong>
+                ${nextSet.setNumber > 1 ? ` — Set ${nextSet.setNumber}` : ''}
+              </div>
+            ` : ''}
           </div>
-        ` : ''}
-        <div class="mt-24">
-          <button class="btn btn-rest-skip" data-action="skip-rest">Skip rest →</button>
         </div>
+      </div>
+      <div class="rep-dock">
+        <button class="btn btn-rest-skip btn-block" data-action="skip-rest">Skip rest</button>
       </div>
     </div>
   `;
@@ -907,34 +857,50 @@ function finishWorkout() {
 
 // === Recording Logic ===
 
+function openCamera() {
+  if (mediaStream && mediaStream.getTracks().some(track => track.readyState === 'live')) {
+    return Promise.resolve(true);
+  }
+  if (cameraPromise) return cameraPromise;
+  cameraPromise = navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+    audio: true,
+  }).then(stream => {
+    if (!recordingEnabled) {
+      stream.getTracks().forEach(track => track.stop());
+      return false;
+    }
+    mediaStream = stream;
+    return true;
+  }).catch(err => {
+    console.warn('Camera failed to start:', err);
+    recordingEnabled = false;
+    mediaStream = null;
+    return false;
+  }).finally(() => {
+    cameraPromise = null;
+  });
+  return cameraPromise;
+}
+
 async function startRecording() {
+  const opened = await openCamera();
+  if (!opened) return false;
+  if (mediaRecorder && mediaRecorder.state === 'recording') return true;
   try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-      audio: true,
-    });
-
     recordedChunks = [];
-
-    // Pick a supported MIME type
     const mimeType = getSupportedMimeType();
     const options = mimeType ? { mimeType } : {};
-
     mediaRecorder = new MediaRecorder(mediaStream, options);
-
     mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        recordedChunks.push(e.data);
-      }
+      if (e.data && e.data.size > 0) recordedChunks.push(e.data);
     };
-
-    mediaRecorder.start(1000); // collect data in 1s chunks
+    mediaRecorder.start(1000);
     return true;
   } catch (err) {
     console.warn('Recording failed to start:', err);
     recordingEnabled = false;
-    mediaStream = null;
-    mediaRecorder = null;
+    stopMediaTracks();
     return false;
   }
 }
@@ -1076,7 +1042,9 @@ function checkTranscriptMatch(transcript, prompt) {
 
 function startTimer() {
   const set = state.sets[state.currentIndex];
-  state.timeLeft = set.duration;
+  if (!state.timeLeft) state.timeLeft = set.duration;
+  const initial = document.getElementById('timer');
+  if (initial) initial.textContent = formatTime(state.timeLeft);
 
   timerInterval = setInterval(() => {
     state.timeLeft--;
@@ -1135,6 +1103,7 @@ async function completeSet() {
 }
 
 function advanceToNext() {
+  howOpen = false;
   state.currentIndex++;
   if (state.currentIndex >= state.sets.length) {
     state.phase = 'done';
@@ -1156,14 +1125,18 @@ async function handleReadyClick(e) {
     flushWorkplaceFromDom();
   }
 
+  if (type === 'toggle-how') {
+    toggleHow();
+    return;
+  }
+
   if (type === 'start-timer') {
-    // Start recording if enabled
+    howOpen = false;
+    recordingNote = '';
     if (recordingEnabled) {
       const started = await startRecording();
       if (!started) {
-        // Recording failed — continue without it, re-render to show toggle off
-        renderCurrentState();
-        return;
+        recordingNote = 'Camera stayed off. This set still runs.';
       }
     }
     state.phase = 'active';
@@ -1184,6 +1157,8 @@ async function handleReadyClick(e) {
     }
   } else if (type === 'toggle-recording') {
     recordingEnabled = !recordingEnabled;
+    recordingNote = '';
+    if (!recordingEnabled) stopMediaTracks();
     renderCurrentState();
   }
 }
@@ -1192,8 +1167,8 @@ async function handleActiveClick(e) {
   const action = e.target.closest('[data-action]');
   if (!action) return;
 
-  if (action.dataset.action === 'toggle-recall') {
-    toggleRecall(action);
+  if (action.dataset.action === 'toggle-how' || action.dataset.action === 'toggle-recall') {
+    toggleHow();
   } else if (action.dataset.action === 'stop-timer') {
     clearInterval(timerInterval);
     await completeSet();
@@ -1259,11 +1234,6 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function getBadgeType(category) {
-  const map = { warmup: 'accent', vocal: 'purple', physical: 'blue', content: 'success', performance: 'pink' };
-  return map[category] || 'accent';
-}
-
 function refreshPrompt(set) {
   if (set.exercise?.workplaceSetup && !state.trackContext?.prompts?.length) {
     const workplace = flushWorkplaceFromDom();
@@ -1296,6 +1266,163 @@ function bindWorkplaceInputs() {
   });
 }
 
+function renderRepBar(progress) {
+  return `
+    <div class="rep-bar">
+      <button class="btn btn-ghost btn-sm" data-action="quit-workout">Quit</button>
+      <span class="label">${state.currentIndex + 1} / ${state.sets.length}</span>
+    </div>
+    <div class="workout-progress-bar rep-progress">
+      <div class="workout-progress-fill" style="width: ${Math.round(progress * 100)}%"></div>
+    </div>
+    <div class="rep-kicker">${sessionFlowLabel()}</div>
+  `;
+}
+
+function renderFocus(set, { shuffle = false } = {}) {
+  const shuffleLabel = set.exercise?.workplaceSetup ? 'New topic' : 'New prompt';
+  const work = workplaceLine();
+  const steps = set.exercise?.instructions || [];
+  const body = set.prompt
+    ? `<div class="rep-prompt-text${set.prompt.includes('\n') ? ' is-brief' : ''}">${escapeHtml(set.prompt)}</div>`
+    : `<ol class="rep-steps">${steps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ol>`;
+  return `
+    <div class="rep-name">${escapeHtml(set.exercise.name)} · Set ${set.setNumber} of ${set.totalSets}</div>
+    ${work}
+    ${body}
+    ${shuffle ? renderShapeChips(set) : renderShapeLine(set)}
+    ${shuffle && set.prompt ? `<button type="button" class="btn btn-ghost btn-sm rep-skip" data-action="new-prompt">${shuffleLabel}</button>` : ''}
+  `;
+}
+
+function workplaceLine() {
+  const set = state.sets[state.currentIndex];
+  if (!set?.exercise?.workplaceSetup) return '';
+  const w = getWorkplace();
+  const bits = [w.place, w.role].filter(Boolean);
+  const label = bits.length ? bits.join(' · ') : 'Add where you work';
+  return `<button type="button" class="rep-work" data-action="toggle-how">${escapeHtml(label)}</button>`;
+}
+
+function renderShapeLine(set) {
+  const structures = set.exercise?.structures;
+  if (!structures?.length) return '';
+  const selected = structures.find(s => s.id === set.storyStructureId)
+    || structures.find(s => s.landing)
+    || structures[0];
+  return `<p class="rep-shape-line">${escapeHtml(selected.name)} · ${escapeHtml(selected.beats.join(' → '))}</p>`;
+}
+
+function renderShapeChips(set) {
+  const structures = set.exercise?.structures;
+  if (!structures?.length) return '';
+  const selected = structures.find(s => s.id === set.storyStructureId)
+    || structures.find(s => s.landing)
+    || structures[0];
+  return `
+    <div class="rep-shapes">
+      ${structures.map(shape => `
+        <button type="button" class="rep-shape-chip ${shape.id === selected.id ? 'is-on' : ''}"
+          data-action="pick-structure" data-structure="${shape.id}"
+          aria-pressed="${shape.id === selected.id ? 'true' : 'false'}">
+          ${escapeHtml(shape.name)}
+        </button>
+      `).join('')}
+    </div>
+    <p class="rep-shape-line">${escapeHtml(selected.beats.join(' → '))}</p>
+  `;
+}
+
+function renderHow(set, { interactive }) {
+  const exercise = set.exercise || {};
+  const instructions = exercise.instructions || [];
+  const tips = exercise.tips || '';
+  const shapes = exercise.structures || [];
+  const work = interactive && exercise.workplaceSetup ? renderWorkplaceSetup() : '';
+  const shapeBlock = shapes.length
+    ? (interactive ? renderStoryShapes(set) : renderShapeRecall(set))
+    : '';
+  return `
+    <div class="rep-sheet" id="rep-sheet" ${howOpen ? '' : 'hidden'}>
+      ${work}
+      ${shapeBlock}
+      ${instructions.length && set.prompt ? `
+        <ul class="instructions-list">
+          ${instructions.map(step => `<li>${escapeHtml(step)}</li>`).join('')}
+        </ul>
+      ` : ''}
+      ${tips ? `
+        <div class="tips-callout">
+          <div class="tips-callout-title">Pro tip</div>
+          <div class="tips-callout-text">${escapeHtml(tips)}</div>
+        </div>
+      ` : ''}
+      ${!work && !shapeBlock && !instructions.length && !tips ? `
+        <p class="rep-note">Say the prompt out loud. Stop when the thought has landed.</p>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderShapeRecall(set) {
+  const structures = set.exercise?.structures || [];
+  const selected = structures.find(s => s.id === set.storyStructureId)
+    || structures.find(s => s.landing)
+    || structures[0];
+  if (!selected) return '';
+  return `
+    <div class="story-shape is-static is-selected">
+      <span class="story-shape-name">${escapeHtml(selected.name)}</span>
+      <span class="story-shape-beats">${escapeHtml(selected.beats.join(' → '))}</span>
+      ${selected.example ? `<span class="story-shape-example">“${escapeHtml(selected.example)}”</span>` : ''}
+    </div>
+  `;
+}
+
+function toggleHow() {
+  const sheet = container?.querySelector('#rep-sheet');
+  const button = container?.querySelector('[data-action="toggle-how"].rep-chip');
+  if (!sheet) return;
+  howOpen = !howOpen;
+  sheet.toggleAttribute('hidden', !howOpen);
+  if (button) {
+    button.setAttribute('aria-expanded', howOpen ? 'true' : 'false');
+    button.textContent = howOpen ? 'Close' : 'How';
+  }
+}
+
+function attachPreview() {
+  const video = document.getElementById('rep-preview');
+  if (video && mediaStream) {
+    video.srcObject = mediaStream;
+    video.play?.().catch(() => {});
+  }
+}
+
+async function armPreview() {
+  if (!recordingEnabled || !state || state.phase !== 'ready') return;
+  const ok = await openCamera();
+  if (!state || state.phase !== 'ready') return;
+  if (!ok) {
+    recordingNote = recordingNote || 'Camera stayed off. You can still do the set.';
+    const chip = container?.querySelector('[data-action="toggle-recording"]');
+    const note = container?.querySelector('[data-record-note]');
+    const thumb = container?.querySelector('.rep-thumb');
+    if (chip) {
+      chip.textContent = 'Record off';
+      chip.classList.remove('is-on');
+      chip.setAttribute('aria-pressed', 'false');
+    }
+    if (thumb) thumb.hidden = true;
+    if (note) {
+      note.hidden = false;
+      note.textContent = recordingNote;
+    }
+    return;
+  }
+  attachPreview();
+}
+
 function renderWorkplaceSetup() {
   const set = state.sets[state.currentIndex];
   if (!set.exercise?.workplaceSetup) return '';
@@ -1315,94 +1442,6 @@ function renderWorkplaceSetup() {
         placeholder="the broken coffee machine, Friday deploys, parent pickup">${escapeHtml(w.details)}</textarea>
     </div>
   `;
-}
-
-function renderPromptCard(set, { shuffle = false } = {}) {
-  if (!set.prompt) return '';
-  const shuffleLabel = set.exercise?.workplaceSetup ? '↻ New topic' : '↻ Different prompt';
-  return `
-    <div class="prompt-card">
-      <div class="prompt-text${set.prompt.includes('\n') ? ' is-brief' : ''}">${escapeHtml(set.prompt)}</div>
-      ${shuffle ? `<button type="button" class="btn btn-ghost btn-sm mt-8" data-action="new-prompt">${shuffleLabel}</button>` : ''}
-    </div>
-  `;
-}
-
-function renderExerciseIdentity(set, { compact = false } = {}) {
-  const catInfo = CATEGORY_INFO[set.exercise.category];
-  const description = set.exercise.description || '';
-  return `
-    <div class="exercise-display ${compact ? 'exercise-display-compact' : ''}">
-      ${compact ? '' : `<div class="exercise-display-icon">${catInfo.icon}</div>`}
-      <div class="exercise-display-name">${escapeHtml(set.exercise.name)}</div>
-      <div class="exercise-display-set">Set ${set.setNumber} of ${set.totalSets}</div>
-      ${description ? `<p class="exercise-display-desc">${escapeHtml(description)}</p>` : ''}
-    </div>
-  `;
-}
-
-function renderRecall(set) {
-  const exercise = set.exercise;
-  if (!exercise) return '';
-  const structures = exercise.structures || [];
-  const instructions = exercise.instructions || [];
-  const selected = structures.find(s => s.id === set.storyStructureId)
-    || structures.find(s => s.landing)
-    || structures[0];
-  const landing = exercise.landing || '';
-
-  return `
-    <div class="recall">
-      <button type="button" class="recall-toggle" data-action="toggle-recall"
-        aria-expanded="false" aria-controls="recall-panel">
-        Remind me
-      </button>
-      <div class="recall-panel" id="recall-panel" hidden>
-        <div class="recall-scroll">
-          ${structures.length ? `
-            <div class="recall-block">
-              <div class="label mb-8">Shapes</div>
-              ${landing ? `<p class="story-shapes-landing">${escapeHtml(landing)}</p>` : ''}
-              ${structures.map(shape => `
-                <div class="story-shape is-static ${shape.id === selected?.id ? 'is-selected' : ''}">
-                  <span class="story-shape-name">
-                    ${escapeHtml(shape.name)}
-                    ${shape.id === selected?.id ? '<span class="story-shape-tag">Your pick</span>' : ''}
-                  </span>
-                  <span class="story-shape-beats">${escapeHtml(shape.beats.join(' → '))}</span>
-                  ${shape.id === selected?.id ? `<span class="story-shape-example">“${escapeHtml(shape.example)}”</span>` : ''}
-                </div>
-              `).join('')}
-            </div>
-          ` : ''}
-          ${instructions.length ? `
-            <div class="recall-block">
-              <div class="label mb-8">Steps</div>
-              <ul class="instructions-list">
-                ${instructions.map(step => `<li>${escapeHtml(step)}</li>`).join('')}
-              </ul>
-            </div>
-          ` : ''}
-          ${exercise.tips ? `
-            <div class="tips-callout recall-tip">
-              <div class="tips-callout-title">Pro tip</div>
-              <div class="tips-callout-text">${escapeHtml(exercise.tips)}</div>
-            </div>
-          ` : ''}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function toggleRecall(button) {
-  const panel = container?.querySelector('#recall-panel');
-  if (!panel) return;
-  const willOpen = panel.hasAttribute('hidden');
-  panel.toggleAttribute('hidden', !willOpen);
-  button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-  button.textContent = willOpen ? 'Hide reminder' : 'Remind me';
-  if (willOpen) panel.scrollIntoView({ block: 'nearest' });
 }
 
 function renderStoryShapes(set) {
