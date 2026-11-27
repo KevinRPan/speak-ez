@@ -23,6 +23,9 @@ export function recordPracticeSession({
   aiScores = null,   // { clarity, structure, confidence, pace, ... } on 0-10
   fillerCount = null,
 }) {
+  // Leaving before a round is finished must not award XP or move the streak.
+  if (!roundsCompleted || roundsCompleted <= 0) return null;
+
   const user = getUser();
   const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
 

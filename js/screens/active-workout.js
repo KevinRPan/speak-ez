@@ -11,6 +11,7 @@ import { messageReviewMarkup } from '../utils/message-review.js';
 import { navigateTo } from '../lib/router.js';
 import { getSettings, loadAll, saveAll } from '../utils/storage.js';
 import { analyzeTranscript, getFillerRateScore, getPaceScore, getPaceLabel, scoreSelfTranscript } from '../utils/transcript-analysis.js';
+import { classifyWorkoutFinish } from '../utils/xp.js';
 
 let state = null;
 let timerInterval = null;
@@ -768,9 +769,46 @@ function renderRest() {
   startRestTimer();
 }
 
+function quitWorkout() {
+  const done = (state?.sets || []).filter(set => set.completed).length;
+  const message = done > 0
+    ? 'Leave this workout? Finished sets will be saved.'
+    : 'Leave this workout? It will not be logged.';
+  if (!confirm(message)) return;
+
+  clearInterval(timerInterval);
+  if (done > 0) {
+    state.phase = 'done';
+    renderCurrentState();
+  } else {
+    abandonWorkout();
+  }
+}
+
+function abandonWorkout() {
+  const track = state?.trackContext
+    ? { trackId: state.trackContext.trackId, projectId: state.trackContext.projectId }
+    : null;
+  state?.sets?.forEach(set => {
+    if (set.recordingUrl) URL.revokeObjectURL(set.recordingUrl);
+  });
+  if (track) {
+    navigateTo('track-project', track);
+  } else {
+    navigateTo('home');
+  }
+}
+
 function finishWorkout() {
   clearInterval(timerInterval);
   stopAndCleanupRecording();
+
+  const outcome = classifyWorkoutFinish(state.sets);
+  if (outcome.discard) {
+    abandonWorkout();
+    return;
+  }
+
   const totalDuration = Math.round((Date.now() - state.startedAt) / 1000);
 
   // Build session data
@@ -846,11 +884,14 @@ function finishWorkout() {
     };
   }
 
-  if (state.sparkContext) {
+  // Spark credit is a finished-quest reward. A partial quit keeps the sets
+  // already done and leaves today's spark available.
+  if (outcome.finished && state.sparkContext) {
     session.isDailySpark = true;
     session.sparkId = state.sparkContext.sparkId;
     session.sparkDayKey = state.sparkContext.sparkDayKey;
   }
+  session.endedEarly = !outcome.finished;
 
   // Revoke any remaining blob URLs
   state.sets.forEach(set => {
@@ -1128,10 +1169,7 @@ async function handleReadyClick(e) {
     state.phase = 'active';
     renderCurrentState();
   } else if (type === 'quit-workout') {
-    if (confirm('Quit this workout? Your progress will be saved.')) {
-      state.phase = 'done';
-      renderCurrentState();
-    }
+    quitWorkout();
   } else if (type === 'skip-exercise') {
     advanceToNext();
   } else if (type === 'new-prompt') {
@@ -1160,11 +1198,7 @@ async function handleActiveClick(e) {
     clearInterval(timerInterval);
     await completeSet();
   } else if (action.dataset.action === 'quit-workout') {
-    clearInterval(timerInterval);
-    if (confirm('Quit this workout?')) {
-      state.phase = 'done';
-      renderCurrentState();
-    }
+    quitWorkout();
   }
 }
 

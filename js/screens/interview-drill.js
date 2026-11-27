@@ -47,6 +47,7 @@ export function renderInterviewDrill(cont, data = {}) {
     lastFeedbackMethod: 'drill',
     lastUpload: null,
     sessionRecorded: false,
+    notice: '',
   };
 
   render();
@@ -335,6 +336,12 @@ function renderSession() {
         ` : ''}
       </div>
 
+      ${state.notice && state.mode === 'ready' ? `
+        <div class="card card-sm" style="margin-bottom: 12px; color: var(--text-secondary);">
+          ${escapeHtml(state.notice)}
+        </div>
+      ` : ''}
+
       <!-- Controls -->
       ${state.mode === 'ready' ? `
         <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -457,7 +464,8 @@ function renderSession() {
       state.round = null;
       state.phase = 'round';
       render();
-    } else if (type === 'start-recording') {
+    } else     if (type === 'start-recording') {
+      state.notice = '';
       state.mode = 'choose-input';
       render();
     } else if (type === 'upload-recording') {
@@ -473,9 +481,20 @@ function renderSession() {
     } else if (type === 'stop-recording') {
       stopRecognition();
       stopTimer();
+      const spoken = (state.response || '').trim();
+      state.response = spoken;
+      if (!spoken) {
+        state.mode = 'ready';
+        elapsedSeconds = 0;
+        state.notice = 'Record an answer before this rep can be reviewed or scored.';
+        render();
+        return;
+      }
+      state.notice = '';
       state.phase = 'review';
       render();
     } else if (type === 'start-typing') {
+      state.notice = '';
       state.mode = 'typing';
       startTimer();
       render();
@@ -784,6 +803,8 @@ async function fetchFeedback() {
  */
 function recordDrillRep() {
   if (!state || state.sessionRecorded) return;
+  const spoken = (state.response || '').trim();
+  if (!spoken || spoken === 'Transcribing uploaded recording...') return;
   state.sessionRecorded = true;
 
   const roundData = FIELDS[state.field]?.rounds?.[state.round];
