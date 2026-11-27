@@ -72,7 +72,7 @@ function renderRecording() {
   const { scenario } = state;
 
   container.innerHTML = `
-    <div class="screen scenario-practice-screen">
+    <div class="screen scenario-practice-screen fills-viewport">
       <div class="scenario-practice-header">
         <button class="btn btn-ghost btn-sm" data-action="quit">✕ Exit</button>
         <div class="scenario-phase-dots">
@@ -153,7 +153,7 @@ function renderReview() {
   const { scenario } = state;
 
   container.innerHTML = `
-    <div class="screen scenario-practice-screen">
+    <div class="screen scenario-practice-screen fills-viewport">
       <div class="scenario-practice-header">
         <button class="btn btn-ghost btn-sm" data-action="quit">✕ Exit</button>
         <div class="scenario-phase-dots">
@@ -221,7 +221,7 @@ function renderQA() {
   const { scenario, qaMessages, qaRound, qaTotal, qaLoading, feedback } = state;
 
   container.innerHTML = `
-    <div class="screen scenario-practice-screen">
+    <div class="screen scenario-practice-screen fills-viewport">
       <div class="scenario-practice-header">
         <button class="btn btn-ghost btn-sm" data-action="quit">✕ Exit</button>
         <div class="scenario-phase-dots">

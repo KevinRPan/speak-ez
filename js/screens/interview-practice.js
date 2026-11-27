@@ -104,7 +104,7 @@ function renderQA() {
   const isVideo = state.recordingKind === 'video';
 
   container.innerHTML = `
-    <div class="screen interview-practice-screen" style="display: flex; flex-direction: column; height: 100%;">
+    <div class="screen interview-practice-screen fills-viewport" style="display: flex; flex-direction: column;">
       <div class="scenario-practice-header">
         <button class="btn btn-ghost btn-sm" data-action="quit">✕ Exit</button>
         <div class="scenario-phase-dots">
