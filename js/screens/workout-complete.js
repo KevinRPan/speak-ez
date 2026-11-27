@@ -17,10 +17,20 @@ import {
 
 export function renderWorkoutComplete(container, data = {}) {
   const session = data.session;
-  if (!session) {
-    navigateTo('workouts');
+  const setsCompleted = session?.setsCompleted || 0;
+  if (!session || setsCompleted <= 0) {
+    const track = session?.track;
+    if (track?.trackId && track?.projectId) {
+      navigateTo('track-project', { trackId: track.trackId, projectId: track.projectId });
+    } else {
+      navigateTo('home');
+    }
     return;
   }
+
+  const finished = session.endedEarly !== true
+    && (session.totalSets || 0) > 0
+    && setsCompleted >= session.totalSets;
 
   // Calculate XP
   const user = getUser();
@@ -28,22 +38,28 @@ export function renderWorkoutComplete(container, data = {}) {
   const streakInfo = checkStreak(user.lastPracticeDate, user.streak);
   session.streakDay = streakInfo.streak;
 
-  // Award Daily Spark bonus once per calendar day
+  // Award Daily Spark bonus once per calendar day, and only for a finished spark
   const todaySpark = getTodaySpark();
-  const claimingSpark = Boolean(
+  const claimingSpark = finished && Boolean(
     session.isDailySpark
     && session.sparkDayKey === todaySpark.dayKey
     && !isSparkCompletedToday(historyBeforeSession, todaySpark)
   );
   if (claimingSpark) {
     session.sparkBonusXp = DAILY_SPARK_BONUS_XP;
+  } else if (!finished) {
+    session.sparkBonusXp = 0;
+    session.isDailySpark = false;
+    delete session.sparkId;
+    delete session.sparkDayKey;
   }
 
   const xpEarned = calculateSessionXp(session);
   session.xpEarned = xpEarned;
 
-  // Generate WHOOP-style reaction before saving (so history doesn't include this session yet)
-  const reaction = generateSessionReaction(session, historyBeforeSession);
+  // Generate WHOOP-style reaction before saving (so history doesn't include this session yet).
+  // An early quit gets a plain save note instead of a celebration.
+  const reaction = finished ? generateSessionReaction(session, historyBeforeSession) : null;
 
   // Update user stats
   const store = loadAll();
@@ -55,27 +71,28 @@ export function renderWorkoutComplete(container, data = {}) {
   // Save session to history
   addSession(session);
 
-  // Track project rep: log it and prep the self-evaluation card
+  // A project rep counts only when the workout was finished.
+  let trackFound = null;
   let trackInfo = null;
   if (session.track) {
-    const found = getTrackProject(session.track.trackId, session.track.projectId);
-    if (found) {
-      const avgSelfRating = getAvgRating(session);
-      const rep = recordRep(found.track.id, found.project.id, {
-        sessionId: session.id,
-        rating: avgSelfRating ? Math.round(avgSelfRating * 10) / 10 : null,
-        aiScores: session.avgAiScores,
-        fillerCount: session.totalFillerCount,
-      });
-      const progress = getProjectProgress(found.project.id);
-      trackInfo = {
-        ...found,
-        rep,
-        repsDone: progress.reps.length,
-        // Monitor areas should reflect reps before this one — its checklist is still empty
-        prevProgress: { reps: progress.reps.slice(0, -1) },
-      };
-    }
+    trackFound = getTrackProject(session.track.trackId, session.track.projectId);
+  }
+  if (finished && trackFound) {
+    const avgSelfRating = getAvgRating(session);
+    const rep = recordRep(trackFound.track.id, trackFound.project.id, {
+      sessionId: session.id,
+      rating: avgSelfRating ? Math.round(avgSelfRating * 10) / 10 : null,
+      aiScores: session.avgAiScores,
+      fillerCount: session.totalFillerCount,
+    });
+    const progress = getProjectProgress(trackFound.project.id);
+    trackInfo = {
+      ...trackFound,
+      rep,
+      repsDone: progress.reps.length,
+      // Monitor areas should reflect reps before this one — its checklist is still empty
+      prevProgress: { reps: progress.reps.slice(0, -1) },
+    };
   }
 
   const levelBefore = getLevelInfo(user.xp);
@@ -91,12 +108,17 @@ export function renderWorkoutComplete(container, data = {}) {
     milestone: { bg: 'rgba(253, 203, 110, 0.12)', border: 'var(--warning)', text: 'var(--warning)' },
     solid: { bg: 'rgba(255, 107, 53, 0.10)', border: 'var(--accent)', text: 'var(--accent)' },
   };
-  const rc = reactionColors[reaction.tone] || reactionColors.solid;
+  const rc = reaction ? (reactionColors[reaction.tone] || reactionColors.solid) : null;
+  const completeTitle = !finished
+    ? 'Progress saved'
+    : claimingSpark
+      ? 'Spark Complete!'
+      : 'Workout Complete!';
 
   container.innerHTML = `
     <div class="screen">
       <div class="complete-screen">
-        <p class="page-kicker">${session.isDailySpark ? 'Daily Spark' : session.track ? 'Tracks' : 'Practice'} · Session complete</p>
+        <p class="page-kicker">${session.isDailySpark ? 'Daily Spark' : session.track ? 'Tracks' : 'Practice'} · ${finished ? 'Session complete' : 'Stopped early'}</p>
 
         ${claimingSpark ? `
           <div class="spark-claimed-banner">
@@ -106,12 +128,18 @@ export function renderWorkoutComplete(container, data = {}) {
           </div>
         ` : ''}
 
-        <!-- WHOOP-style reaction card -->
-        <div class="reaction-card" style="background: ${rc.bg}; border-color: ${rc.border};">
-          <div class="reaction-tone" style="color: ${rc.text};">${reaction.tone.toUpperCase()}</div>
-          <div class="reaction-headline">${reaction.headline}</div>
-          ${reaction.callout ? `<div class="reaction-callout">${reaction.callout}</div>` : ''}
-        </div>
+        ${reaction ? `
+          <div class="reaction-card" style="background: ${rc.bg}; border-color: ${rc.border};">
+            <div class="reaction-tone" style="color: ${rc.text};">${reaction.tone.toUpperCase()}</div>
+            <div class="reaction-headline">${reaction.headline}</div>
+            ${reaction.callout ? `<div class="reaction-callout">${reaction.callout}</div>` : ''}
+          </div>
+        ` : `
+          <div class="card card-sm mb-16">
+            <div class="label mb-4">Saved</div>
+            <div style="font-size: 0.9rem; color: var(--text-secondary);">Finished sets are in your history.</div>
+          </div>
+        `}
 
         ${trackInfo ? renderTrackEval(trackInfo) : ''}
 
@@ -152,8 +180,8 @@ export function renderWorkoutComplete(container, data = {}) {
           </div>
         ` : ''}
 
-        <div class="complete-icon">${leveledUp ? '🎉' : claimingSpark ? '✨' : '💪'}</div>
-        <div class="complete-title">${claimingSpark ? 'Spark Complete!' : 'Workout Complete!'}</div>
+        ${finished ? `<div class="complete-icon">${leveledUp ? '🎉' : claimingSpark ? '✨' : '💪'}</div>` : ''}
+        <div class="complete-title">${completeTitle}</div>
         <div class="complete-subtitle">${session.workoutName}</div>
 
         ${leveledUp ? `
@@ -219,7 +247,7 @@ export function renderWorkoutComplete(container, data = {}) {
           </div>
         </div>
 
-        ${reaction.suggestion ? `
+        ${reaction?.suggestion ? `
           <div class="card card-sm mb-16" style="border-left: 3px solid var(--purple);">
             <div class="label mb-4" style="color: var(--purple);">Next Focus</div>
             <div style="font-size: 0.85rem; color: var(--text-secondary);">${reaction.suggestion}</div>
@@ -227,7 +255,7 @@ export function renderWorkoutComplete(container, data = {}) {
         ` : ''}
 
         <button class="btn btn-primary btn-lg btn-block mb-16" id="complete-done-btn">
-          ${trackInfo ? 'Back to Project' : 'Done'}
+          ${session.track ? 'Back to Project' : 'Done'}
         </button>
         <button class="btn btn-secondary btn-block" id="complete-repeat-btn">
           ${trackInfo
@@ -238,28 +266,28 @@ export function renderWorkoutComplete(container, data = {}) {
     </div>
   `;
 
-  showConfetti();
+  if (finished) showConfetti();
 
   if (trackInfo) {
     bindTrackEval(container, trackInfo);
   }
 
   document.getElementById('complete-done-btn').addEventListener('click', () => {
-    if (trackInfo) {
-      navigateTo('track-project', { trackId: trackInfo.track.id, projectId: trackInfo.project.id });
+    if (session.track) {
+      navigateTo('track-project', { trackId: session.track.trackId, projectId: session.track.projectId });
     } else {
       navigateTo('home');
     }
   });
 
   document.getElementById('complete-repeat-btn').addEventListener('click', () => {
-    if (trackInfo) {
+    if (trackFound) {
       navigateTo('active-workout', {
-        workout: buildProjectWorkout(trackInfo.track, trackInfo.project),
+        workout: buildProjectWorkout(trackFound.track, trackFound.project),
         trackContext: {
-          trackId: trackInfo.track.id,
-          projectId: trackInfo.project.id,
-          prompts: trackInfo.project.prompts || null,
+          trackId: trackFound.track.id,
+          projectId: trackFound.project.id,
+          prompts: trackFound.project.prompts || null,
         },
       });
     } else if (session.isDailySpark) {

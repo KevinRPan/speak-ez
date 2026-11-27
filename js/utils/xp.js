@@ -35,19 +35,38 @@ export function getLevelInfo(xp) {
 }
 
 /**
- * Calculate XP earned from a completed workout
+ * How a workout ended, based on which sets were actually finished.
+ * Quitting or skipping before any set is finished discards the session.
+ * Completion rewards require every set.
+ */
+export function classifyWorkoutFinish(sets) {
+  const list = Array.isArray(sets) ? sets : [];
+  const completed = list.filter(set => set && set.completed).length;
+  return {
+    completed,
+    total: list.length,
+    discard: completed === 0,
+    finished: list.length > 0 && completed === list.length,
+  };
+}
+
+/**
+ * Calculate XP earned from a completed workout.
+ * Unfinished sets pay nothing. The completion bonus and Daily Spark bonus
+ * pay only when every set in the session was finished.
  */
 export function calculateSessionXp(session) {
-  let xp = 0;
+  const exercises = session.exercises || [];
+  const completedSets = exercises.reduce(
+    (sum, ex) => sum + (Number(ex.setsCompleted) || 0),
+    0,
+  );
+  if (completedSets <= 0) return 0;
 
-  // Base XP per exercise completed
-  session.exercises.forEach(ex => {
-    xp += 20 * ex.setsCompleted;
-  });
+  let xp = completedSets * 20;
 
-  // Bonus for completing the full workout
-  const allCompleted = session.exercises.every(
-    ex => ex.setsCompleted >= ex.setsTotal
+  const allCompleted = exercises.length > 0 && exercises.every(
+    ex => (ex.setsTotal || 0) > 0 && ex.setsCompleted >= ex.setsTotal
   );
   if (allCompleted) xp += 50;
 
@@ -56,8 +75,8 @@ export function calculateSessionXp(session) {
     xp += Math.min(session.streakDay * 5, 50);
   }
 
-  // Daily Spark quest bonus (awarded once when the session is tagged as today's spark)
-  if (session.isDailySpark && session.sparkBonusXp) {
+  // Daily Spark quest bonus only for a spark that was actually finished
+  if (allCompleted && session.isDailySpark && session.sparkBonusXp) {
     xp += session.sparkBonusXp;
   }
 
